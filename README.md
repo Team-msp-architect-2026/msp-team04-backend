@@ -71,7 +71,7 @@ src
 ```
 
 ---
-🔗 API Documentation
+🔗 API Documentation.
 
 👉 [Wiki 참고](https://github.com/Team-msp-architect-2026/msp-team04-wiki/wiki/API-Specification)
 
