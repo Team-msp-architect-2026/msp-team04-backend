@@ -56,6 +56,14 @@ assignees: ""
 
 ---
 
+## 🌿 작업 브랜치명
+
+<!-- 예: fix/auth-token, fix/payment-status, fix/redis-lock -->
+
+fix/
+
+---
+
 ## 🗂️ 영역
 
 <!-- 예: backend, frontend, infra, ci-cd, docs -->
