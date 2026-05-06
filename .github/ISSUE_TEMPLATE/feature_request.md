@@ -30,6 +30,14 @@ assignees: ""
 
 ---
 
+## 🌿 작업 브랜치명
+
+<!-- 예: feature/auth, feature/payment, feature/community -->
+
+feature/
+
+---
+
 ## 📎 참고 자료
 
 <!-- API 명세, ERD, 화면설계서, 위키 링크 등을 작성해주세요. -->
