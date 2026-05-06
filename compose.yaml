@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: moment-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: moment_local
+      POSTGRES_USER: moment
+      POSTGRES_PASSWORD: moment1234
+      TZ: Asia/Seoul
+    volumes:
+      - moment-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moment -d moment_local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: moment-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - moment-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  moment-postgres-data:
+  moment-redis-data:
