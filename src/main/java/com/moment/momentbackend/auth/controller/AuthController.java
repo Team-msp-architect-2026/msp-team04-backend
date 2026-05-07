@@ -1,5 +1,7 @@
 package com.moment.momentbackend.auth.controller;
 
+import com.moment.momentbackend.auth.dto.KakaoLoginRequestDto;
+import com.moment.momentbackend.auth.dto.KakaoLoginResponseDto;
 import com.moment.momentbackend.auth.dto.RefreshRequestDto;
 import com.moment.momentbackend.auth.dto.RefreshResponseDto;
 import com.moment.momentbackend.auth.service.AuthService;
@@ -19,6 +21,17 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+
+    @Operation(summary = "카카오 로그인", description = "카카오 인가코드로 JWT 발급")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공")
+    })
+    @PostMapping("/kakao")
+    public ResponseEntity<ApiResponse<KakaoLoginResponseDto>> kakaoLogin(
+            @Valid @RequestBody KakaoLoginRequestDto request) {
+        KakaoLoginResponseDto response = authService.kakaoLogin(request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
 
     @Operation(summary = "토큰 재발급", description = "refreshToken으로 새 accessToken 발급")
     @ApiResponses({
