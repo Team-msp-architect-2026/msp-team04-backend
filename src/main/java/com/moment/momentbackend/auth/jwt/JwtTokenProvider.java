@@ -20,7 +20,7 @@ public class JwtTokenProvider {
     private final long accessTokenExpiry;
 
     public JwtTokenProvider(
-            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.secret-key}") String secret,
             @Value("${jwt.access-token-expiry}") long accessTokenExpiry) {
         byte[] keyBytes = Base64.getDecoder().decode(secret);
         this.key = Keys.hmacShaKeyFor(keyBytes);
