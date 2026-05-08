@@ -40,7 +40,7 @@ public class AuthService {
 
         // 2. 카카오 사용자 정보 받기
         Map<String, Object> userInfo = kakaoAuthClient.getUserInfo(kakaoAccessToken);
-        Long kakaoId = (Long) userInfo.get("id");
+        String kakaoId = String.valueOf(userInfo.get("id"));
 
         // 3. 신규 가입 여부 확인
         Optional<User> existingUser = userRepository.findByKakaoId(kakaoId);
@@ -52,7 +52,7 @@ public class AuthService {
             String nickname = properties != null ? (String) properties.get("nickname") : "사용자";
             userRepository.save(User.builder()
                     .kakaoId(kakaoId)
-                    .nickname(nickname)
+                    .parentName(nickname)
                     .createdAt(LocalDateTime.now())
                     .build());
         }
