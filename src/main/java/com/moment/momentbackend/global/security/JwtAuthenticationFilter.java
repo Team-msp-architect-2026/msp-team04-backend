@@ -2,6 +2,7 @@ package com.moment.momentbackend.global.security;
 
 import com.moment.momentbackend.auth.jwt.JwtTokenProvider;
 import com.moment.momentbackend.global.exception.CustomException;
+import com.moment.momentbackend.global.redis.RedisService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +23,7 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final RedisService redisService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -31,10 +33,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null) {
             try {
-                Long userId = jwtTokenProvider.getUserId(token);
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                // 블랙리스트 확인
+                if (redisService.isBlacklisted(token)) {
+                    log.warn("블랙리스트 토큰 접근 시도");
+                } else {
+                    Long userId = jwtTokenProvider.getUserId(token);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             } catch (CustomException e) {
                 log.warn("JWT 인증 실패: {}", e.getMessage());
             }

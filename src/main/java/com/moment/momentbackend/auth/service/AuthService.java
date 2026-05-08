@@ -10,6 +10,7 @@ import com.moment.momentbackend.auth.jwt.JwtTokenProvider;
 import com.moment.momentbackend.auth.repository.RefreshTokenRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.redis.RedisService;
 import com.moment.momentbackend.user.entity.User;
 import com.moment.momentbackend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class AuthService {
     private final KakaoAuthClient kakaoAuthClient;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
+    private final RedisService redisService;
 
     @Transactional
     public KakaoLoginResponseDto kakaoLogin(KakaoLoginRequestDto request) {
@@ -93,5 +95,15 @@ public class AuthService {
         savedToken.updateToken(newRefreshToken, LocalDateTime.now().plusDays(7));
 
         return new RefreshResponseDto(newAccessToken);
+    }
+
+    @Transactional
+    public void logout(String accessToken, Long userId) {
+        // 1. DB에서 RefreshToken 삭제
+        refreshTokenRepository.findByUserId(userId)
+                .ifPresent(refreshTokenRepository::delete);
+
+        // 2. AccessToken Redis 블랙리스트 등록 (30분 TTL)
+        redisService.setBlacklist(accessToken, 1800000L);
     }
 }
