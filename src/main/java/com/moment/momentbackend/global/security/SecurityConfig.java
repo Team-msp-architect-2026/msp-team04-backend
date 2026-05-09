@@ -38,7 +38,8 @@ public class SecurityConfig {
                                 "/programs",
                                 "/programs/**",
                                 "/map",
-                                "/api/benefits"
+                                "/api/benefits",
+                                "/api/batch/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

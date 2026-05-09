@@ -1,0 +1,6 @@
+externalSource,externalId,title,category,description,programType,targetAgeMin,targetAgeMax,price,isFree,region,detailAddress,latitude,longitude,classType,isRecruiting,maxCapacity,remainCapacity
+CSV,CSV-PRG-001,CSV 수학 기초반,EDUCATION,CSV로 적재된 수학 수업,PUBLIC,6,10,0,true,강남구,강남구 테헤란로 999,37.497942,127.027621,SMALL,true,20,20
+CSV,CSV-PRG-002,CSV 영어 회화반,LANGUAGE,CSV로 적재된 영어 수업,PRIVATE,8,13,80000,false,송파구,송파구 올림픽로 999,37.514575,127.105399,SMALL,true,15,15
+CSV,CSV-PRG-003,CSV 미술 창의반,ART,CSV로 적재된 미술 수업,PUBLIC,5,9,0,true,마포구,마포구 월드컵로 999,37.566200,126.901900,SMALL,true,12,12
+CSV,CSV-PRG-004,CSV 코딩 기초반,EDUCATION,CSV로 적재된 코딩 수업,PUBLIC,9,13,0,true,노원구,노원구 노해로 999,37.654259,127.056294,SMALL,true,18,18
+CSV,CSV-PRG-005,CSV 돌봄 교실,CARE,CSV로 적재된 돌봄 프로그램,GOVERNMENT,6,12,0,true,은평구,은평구 은평로 999,37.602709,126.929111,MEDIUM,true,30,30
