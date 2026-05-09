@@ -36,7 +36,8 @@ public class SecurityConfig {
                                 "/auth/kakao",
                                 "/auth/refresh",
                                 "/programs",
-                                "/programs/**"
+                                "/programs/**",
+                                "/map"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

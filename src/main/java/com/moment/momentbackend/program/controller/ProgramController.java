@@ -14,6 +14,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.moment.momentbackend.program.dto.MapPinResponseDto;
+import java.util.List;
 
 @Tag(name = "Program", description = "프로그램 API")
 @RestController
@@ -44,5 +46,14 @@ public class ProgramController {
     public ResponseEntity<ApiResponse<ProgramDetailResponseDto>> getProgram(
             @PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(programService.getProgram(id)));
+    }
+
+    @Operation(summary = "지도 핀 조회",
+            description = "핀 색상: 공공(BLUE) / 모집중(GREEN) / 민간(ORANGE) / 마감(GRAY)")
+    @GetMapping("/map")
+    public ResponseEntity<ApiResponse<List<MapPinResponseDto>>> getMapPins(
+            @Parameter(description = "지역 필터")
+            @RequestParam(required = false) String region) {
+        return ResponseEntity.ok(ApiResponse.ok(programService.getMapPins(region)));
     }
 }
