@@ -37,7 +37,8 @@ public class SecurityConfig {
                                 "/auth/refresh",
                                 "/programs",
                                 "/programs/**",
-                                "/map"
+                                "/map",
+                                "/api/benefits"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
