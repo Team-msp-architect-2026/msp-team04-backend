@@ -1,10 +1,13 @@
 package com.moment.momentbackend.batch.job;
 
 import com.moment.momentbackend.batch.dto.BenefitCsvDto;
+import com.moment.momentbackend.batch.dto.InstitutionCsvDto;
 import com.moment.momentbackend.batch.dto.ProgramCsvDto;
 import com.moment.momentbackend.batch.processor.BenefitItemProcessor;
+import com.moment.momentbackend.batch.processor.InstitutionItemProcessor;
 import com.moment.momentbackend.batch.processor.ProgramItemProcessor;
 import com.moment.momentbackend.batch.writer.BenefitItemWriter;
+import com.moment.momentbackend.batch.writer.InstitutionItemWriter;
 import com.moment.momentbackend.batch.writer.ProgramItemWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,12 +35,28 @@ public class SyncJobConfig {
     private final ProgramItemWriter programItemWriter;
     private final BenefitItemProcessor benefitItemProcessor;
     private final BenefitItemWriter benefitItemWriter;
+    private final InstitutionItemProcessor institutionItemProcessor;
+    private final InstitutionItemWriter institutionItemWriter;
 
     @Bean
     public Job syncJob() {
         return new JobBuilder("syncJob", jobRepository)
-                .start(programSyncStep())
+                .start(institutionSyncStep())
+                .next(programSyncStep())
                 .next(benefitSyncStep())
+                .build();
+    }
+
+    @Bean
+    public Step institutionSyncStep() {
+        return new StepBuilder("institutionSyncStep", jobRepository)
+                .<InstitutionCsvDto, InstitutionCsvDto>chunk(10, transactionManager)
+                .reader(institutionCsvReader())
+                .processor(institutionItemProcessor)
+                .writer(institutionItemWriter)
+                .faultTolerant()
+                .skipLimit(100)
+                .skip(Exception.class)
                 .build();
     }
 
@@ -64,6 +83,22 @@ public class SyncJobConfig {
                 .faultTolerant()
                 .skipLimit(100)
                 .skip(Exception.class)
+                .build();
+    }
+
+    @Bean
+    public FlatFileItemReader<InstitutionCsvDto> institutionCsvReader() {
+        BeanWrapperFieldSetMapper<InstitutionCsvDto> mapper = new BeanWrapperFieldSetMapper<>();
+        mapper.setTargetType(InstitutionCsvDto.class);
+
+        return new FlatFileItemReaderBuilder<InstitutionCsvDto>()
+                .name("institutionCsvReader")
+                .resource(new ClassPathResource("batch/institutions.csv"))
+                .delimited()
+                .names("externalSource", "externalId", "institutionName", "address",
+                        "region", "phone", "website", "institutionType")
+                .fieldSetMapper(mapper)
+                .linesToSkip(1)
                 .build();
     }
 
