@@ -1,0 +1,4 @@
+externalSource,externalId,benefitName,benefitType,supportAmount,supportDescription,applyLink,minAge,maxAge,region,isActive
+CSV,CSV-BEN-001,CSV 아동수당,ALLOWANCE,100000,CSV 적재 아동수당,https://example.com/benefit/csv1,3,7,전국,true
+CSV,CSV-BEN-002,CSV 교육바우처,VOUCHER,150000,CSV 적재 교육바우처,https://example.com/benefit/csv2,6,13,서울,true
+CSV,CSV-BEN-003,CSV 무료돌봄서비스,FREE_SERVICE,80000,CSV 적재 무료돌봄,https://example.com/benefit/csv3,3,12,전국,true
