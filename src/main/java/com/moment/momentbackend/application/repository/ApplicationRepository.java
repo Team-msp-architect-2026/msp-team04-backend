@@ -5,6 +5,7 @@ import com.moment.momentbackend.application.type.ApplicationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
+import java.util.Optional;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
 
@@ -14,4 +15,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             Long programId,
             Collection<ApplicationStatus> statuses
     );
+
+    Optional<Application> findByIdAndUserId(Long id, Long userId);
 }
