@@ -3,6 +3,7 @@ package com.moment.momentbackend.program.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -121,4 +122,36 @@ public class Program {
 
     @OneToMany(mappedBy = "program", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramTag> tags = new ArrayList<>();
+
+    public boolean isAvailableForApplication() {
+        return Boolean.TRUE.equals(this.isPublic)
+                && Boolean.TRUE.equals(this.isRecruiting)
+                && this.remainCapacity != null
+                && this.remainCapacity > 0;
+    }
+
+    public void decreaseRemainCapacity() {
+        if (this.remainCapacity == null || this.remainCapacity <= 0) {
+            throw new IllegalStateException("남은 좌석이 없습니다.");
+        }
+
+        this.remainCapacity -= 1;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void restoreRemainCapacity() {
+        if (this.maxCapacity != null
+                && this.remainCapacity != null
+                && this.remainCapacity >= this.maxCapacity) {
+            return;
+        }
+
+        if (this.remainCapacity == null) {
+            this.remainCapacity = 1;
+        } else {
+            this.remainCapacity += 1;
+        }
+
+        this.updatedAt = LocalDateTime.now();
+    }
 }
