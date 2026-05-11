@@ -1,9 +1,11 @@
 package com.moment.momentbackend.community.service;
 
 import com.moment.momentbackend.community.dto.*;
+import com.moment.momentbackend.community.entity.CommentLike;
 import com.moment.momentbackend.community.entity.CommunityComment;
 import com.moment.momentbackend.community.entity.CommunityPost;
 import com.moment.momentbackend.community.entity.PostLike;
+import com.moment.momentbackend.community.repository.CommentLikeRepository;
 import com.moment.momentbackend.community.repository.CommunityCommentRepository;
 import com.moment.momentbackend.community.repository.CommunityPostRepository;
 import com.moment.momentbackend.community.repository.PostLikeRepository;
@@ -25,6 +27,7 @@ public class CommunityService {
     private final CommunityPostRepository communityPostRepository;
     private final CommunityCommentRepository communityCommentRepository;
     private final PostLikeRepository postLikeRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     // ===================== 게시글 =====================
 
@@ -38,7 +41,7 @@ public class CommunityService {
                 request.getContent(),
                 request.getImageUrl()
         );
-        return PostDetailResponse.of(communityPostRepository.save(post));
+        return PostDetailResponse.of(communityPostRepository.save(post), false);
     }
 
     @Transactional(readOnly = true)
@@ -52,10 +55,12 @@ public class CommunityService {
     }
 
     @Transactional(readOnly = true)
-    public PostDetailResponse getPostDetail(Long postId) {
+    public PostDetailResponse getPostDetail(Long userId, Long postId) {
         CommunityPost post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
-        return PostDetailResponse.of(post);
+
+        boolean isLikedByMe = postLikeRepository.existsByPostIdAndUserId(postId, userId);
+        return PostDetailResponse.of(post, isLikedByMe);
     }
 
     @Transactional
@@ -74,7 +79,9 @@ public class CommunityService {
                 request.getContent(),
                 request.getImageUrl()
         );
-        return PostDetailResponse.of(post);
+
+        boolean isLikedByMe = postLikeRepository.existsByPostIdAndUserId(postId, userId);
+        return PostDetailResponse.of(post, isLikedByMe);
     }
 
     @Transactional
@@ -98,20 +105,23 @@ public class CommunityService {
 
         CommunityComment comment = CommunityComment.create(postId, userId, request.getContent());
         communityCommentRepository.save(comment);
-
         post.increaseCommentCount();
 
-        return CommentResponse.of(comment);
+        return CommentResponse.of(comment, false, true);
     }
 
     @Transactional(readOnly = true)
-    public List<CommentResponse> getCommentList(Long postId) {
+    public List<CommentResponse> getCommentList(Long userId, Long postId) {
         communityPostRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
         return communityCommentRepository.findByPostIdOrderByCreatedAtAsc(postId)
                 .stream()
-                .map(CommentResponse::of)
+                .map(comment -> {
+                    boolean likedByMe = commentLikeRepository.existsByCommentIdAndUserId(comment.getId(), userId);
+                    boolean isMine = comment.getUserId().equals(userId);
+                    return CommentResponse.of(comment, likedByMe, isMine);
+                })
                 .toList();
     }
 
@@ -131,14 +141,36 @@ public class CommunityService {
         post.decreaseCommentCount();
     }
 
+    @Transactional
+    public CommentLikeResponse toggleCommentLike(Long userId, Long postId, Long commentId) {
+        communityPostRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        CommunityComment comment = communityCommentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        commentLikeRepository.findByCommentIdAndUserId(commentId, userId)
+                .ifPresentOrElse(
+                        like -> {
+                            commentLikeRepository.delete(like);
+                            comment.decreaseLikeCount();
+                        },
+                        () -> {
+                            commentLikeRepository.save(CommentLike.create(commentId, userId));
+                            comment.increaseLikeCount();
+                        }
+                );
+
+        boolean likedByMe = commentLikeRepository.existsByCommentIdAndUserId(commentId, userId);
+        return CommentLikeResponse.of(commentId, likedByMe, comment.getLikeCount());
+    }
+
     // ===================== 좋아요 =====================
 
     @Transactional
     public LikeResponse toggleLike(Long userId, Long postId) {
         CommunityPost post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
-
-        boolean liked;
 
         postLikeRepository.findByPostIdAndUserId(postId, userId)
                 .ifPresentOrElse(
@@ -152,8 +184,7 @@ public class CommunityService {
                         }
                 );
 
-        liked = postLikeRepository.existsByPostIdAndUserId(postId, userId);
-
+        boolean liked = postLikeRepository.existsByPostIdAndUserId(postId, userId);
         return LikeResponse.of(postId, liked, post.getLikeCount());
     }
 }

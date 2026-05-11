@@ -52,4 +52,14 @@ public class CommunityComment {
                 .content(content)
                 .build();
     }
+
+    public void increaseLikeCount() {
+        this.likeCount += 1;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount -= 1;
+        }
+    }
 }

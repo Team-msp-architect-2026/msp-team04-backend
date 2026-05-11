@@ -20,10 +20,11 @@ public class PostDetailResponse {
     private String imageUrl;
     private Integer commentCount;
     private Integer likeCount;
+    private boolean isLikedByMe;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static PostDetailResponse of(CommunityPost post) {
+    public static PostDetailResponse of(CommunityPost post, boolean isLikedByMe) {
         return PostDetailResponse.builder()
                 .postId(post.getId())
                 .userId(post.getUserId())
@@ -34,6 +35,7 @@ public class PostDetailResponse {
                 .imageUrl(post.getImageUrl())
                 .commentCount(post.getCommentCount())
                 .likeCount(post.getLikeCount())
+                .isLikedByMe(isLikedByMe)
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .build();
