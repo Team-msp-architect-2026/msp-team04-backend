@@ -30,6 +30,7 @@ public enum ErrorCode {
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문 정보를 찾을 수 없습니다"),
     PREFERENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "선호도 정보를 찾을 수 없습니다"),
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "후기 정보를 찾을 수 없습니다"),
+    BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "북마크 정보를 찾을 수 없습니다"),
 
     // 409
     ALREADY_APPLIED(HttpStatus.CONFLICT, "이미 신청한 프로그램입니다"),
