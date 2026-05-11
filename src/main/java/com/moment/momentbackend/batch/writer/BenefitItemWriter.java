@@ -23,8 +23,8 @@ public class BenefitItemWriter implements ItemWriter<BenefitCsvDto> {
             try {
                 upsert(dto);
             } catch (Exception e) {
-                log.error("지원금 upsert 실패 - externalId: {}, 오류: {}",
-                        dto.getExternalId(), e.getMessage());
+                log.error("지원금 upsert 실패 - externalSource: {}, externalId: {}, 오류: {}",
+                        dto.getExternalSource(), dto.getExternalId(), e.getMessage());
             }
         }
     }
