@@ -1,11 +1,12 @@
 package com.moment.momentbackend.community.service;
 
-import com.moment.momentbackend.community.dto.PostCreateRequest;
-import com.moment.momentbackend.community.dto.PostDetailResponse;
-import com.moment.momentbackend.community.dto.PostListResponse;
-import com.moment.momentbackend.community.dto.PostUpdateRequest;
+import com.moment.momentbackend.community.dto.*;
+import com.moment.momentbackend.community.entity.CommunityComment;
 import com.moment.momentbackend.community.entity.CommunityPost;
+import com.moment.momentbackend.community.entity.PostLike;
+import com.moment.momentbackend.community.repository.CommunityCommentRepository;
 import com.moment.momentbackend.community.repository.CommunityPostRepository;
+import com.moment.momentbackend.community.repository.PostLikeRepository;
 import com.moment.momentbackend.community.type.PostCategory;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
@@ -15,11 +16,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CommunityService {
 
     private final CommunityPostRepository communityPostRepository;
+    private final CommunityCommentRepository communityCommentRepository;
+    private final PostLikeRepository postLikeRepository;
+
+    // ===================== 게시글 =====================
 
     @Transactional
     public PostDetailResponse createPost(Long userId, PostCreateRequest request) {
@@ -80,5 +87,73 @@ public class CommunityService {
         }
 
         communityPostRepository.delete(post);
+    }
+
+    // ===================== 댓글 =====================
+
+    @Transactional
+    public CommentResponse createComment(Long userId, Long postId, CommentCreateRequest request) {
+        CommunityPost post = communityPostRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        CommunityComment comment = CommunityComment.create(postId, userId, request.getContent());
+        communityCommentRepository.save(comment);
+
+        post.increaseCommentCount();
+
+        return CommentResponse.of(comment);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommentResponse> getCommentList(Long postId) {
+        communityPostRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        return communityCommentRepository.findByPostIdOrderByCreatedAtAsc(postId)
+                .stream()
+                .map(CommentResponse::of)
+                .toList();
+    }
+
+    @Transactional
+    public void deleteComment(Long userId, Long postId, Long commentId) {
+        CommunityPost post = communityPostRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        CommunityComment comment = communityCommentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        if (!comment.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        communityCommentRepository.delete(comment);
+        post.decreaseCommentCount();
+    }
+
+    // ===================== 좋아요 =====================
+
+    @Transactional
+    public LikeResponse toggleLike(Long userId, Long postId) {
+        CommunityPost post = communityPostRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        boolean liked;
+
+        postLikeRepository.findByPostIdAndUserId(postId, userId)
+                .ifPresentOrElse(
+                        like -> {
+                            postLikeRepository.delete(like);
+                            post.decreaseLikeCount();
+                        },
+                        () -> {
+                            postLikeRepository.save(PostLike.create(postId, userId));
+                            post.increaseLikeCount();
+                        }
+                );
+
+        liked = postLikeRepository.existsByPostIdAndUserId(postId, userId);
+
+        return LikeResponse.of(postId, liked, post.getLikeCount());
     }
 }

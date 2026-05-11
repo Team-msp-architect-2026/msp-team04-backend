@@ -1,9 +1,6 @@
 package com.moment.momentbackend.community.controller;
 
-import com.moment.momentbackend.community.dto.PostCreateRequest;
-import com.moment.momentbackend.community.dto.PostDetailResponse;
-import com.moment.momentbackend.community.dto.PostListResponse;
-import com.moment.momentbackend.community.dto.PostUpdateRequest;
+import com.moment.momentbackend.community.dto.*;
 import com.moment.momentbackend.community.service.CommunityService;
 import com.moment.momentbackend.community.type.PostCategory;
 import com.moment.momentbackend.global.response.ApiResponse;
@@ -16,12 +13,16 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/community")
 public class CommunityController {
 
     private final CommunityService communityService;
+
+    // ===================== 게시글 =====================
 
     @PostMapping
     public ApiResponse<PostDetailResponse> createPost(
@@ -62,5 +63,43 @@ public class CommunityController {
     ) {
         communityService.deletePost(userId, postId);
         return ApiResponse.ok(null, "게시글이 삭제되었습니다.");
+    }
+
+    // ===================== 댓글 =====================
+
+    @PostMapping("/{postId}/comments")
+    public ApiResponse<CommentResponse> createComment(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody CommentCreateRequest request
+    ) {
+        return ApiResponse.ok(communityService.createComment(userId, postId, request), "댓글이 작성되었습니다.");
+    }
+
+    @GetMapping("/{postId}/comments")
+    public ApiResponse<List<CommentResponse>> getCommentList(
+            @PathVariable Long postId
+    ) {
+        return ApiResponse.ok(communityService.getCommentList(postId));
+    }
+
+    @DeleteMapping("/{postId}/comments/{commentId}")
+    public ApiResponse<Void> deleteComment(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @PathVariable Long commentId
+    ) {
+        communityService.deleteComment(userId, postId, commentId);
+        return ApiResponse.ok(null, "댓글이 삭제되었습니다.");
+    }
+
+    // ===================== 좋아요 =====================
+
+    @PostMapping("/{postId}/like")
+    public ApiResponse<LikeResponse> toggleLike(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId
+    ) {
+        return ApiResponse.ok(communityService.toggleLike(userId, postId));
     }
 }
