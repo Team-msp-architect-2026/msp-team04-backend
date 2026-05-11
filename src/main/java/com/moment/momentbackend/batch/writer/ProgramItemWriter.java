@@ -23,8 +23,8 @@ public class ProgramItemWriter implements ItemWriter<ProgramCsvDto> {
             try {
                 upsert(dto);
             } catch (Exception e) {
-                log.error("프로그램 upsert 실패 - externalId: {}, 오류: {}",
-                        dto.getExternalId(), e.getMessage());
+                log.error("프로그램 upsert 실패 - externalSource: {}, externalId: {}, 오류: {}",
+                        dto.getExternalSource(), dto.getExternalId(), e.getMessage());
             }
         }
     }
