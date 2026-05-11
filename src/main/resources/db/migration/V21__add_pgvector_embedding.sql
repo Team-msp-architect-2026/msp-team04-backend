@@ -1,0 +1,5 @@
+-- pgvector 로컬 설치 후 활성화 예정
+-- TODO: 배포 환경에서 pgvector 설치 후 아래 주석 해제
+-- CREATE EXTENSION IF NOT EXISTS vector;
+-- ALTER TABLE program ADD COLUMN IF NOT EXISTS embedding vector(1536);
+-- ALTER TABLE review ADD COLUMN IF NOT EXISTS embedding vector(1536);
