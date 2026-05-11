@@ -18,4 +18,6 @@ public interface AiRecommendationRepository extends JpaRepository<AiRecommendati
     boolean existsByPreferenceIdAndProgramId(Long preferenceId, Long programId);
 
     boolean existsByPreferenceIdAndRankNo(Long preferenceId, Integer rankNo);
+
+    long countByChildId(Long childId);
 }
