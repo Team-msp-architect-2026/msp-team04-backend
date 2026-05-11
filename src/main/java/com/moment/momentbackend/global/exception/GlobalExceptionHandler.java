@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -30,5 +31,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_ERROR.getStatus())
                 .body(ApiResponse.fail(ErrorCode.INTERNAL_ERROR));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidEnum(HttpMessageNotReadableException e) {
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.fail(ErrorCode.INVALID_ENUM_VALUE));
     }
 }

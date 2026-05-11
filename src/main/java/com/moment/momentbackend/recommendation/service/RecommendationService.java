@@ -6,6 +6,7 @@ import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.recommendation.dto.PreferenceRequestDto;
+import com.moment.momentbackend.recommendation.dto.PreferenceResponseDto;
 import com.moment.momentbackend.recommendation.dto.RecommendationResponseDto;
 import com.moment.momentbackend.recommendation.dto.ScoreBreakdownDto;
 import com.moment.momentbackend.recommendation.entity.AiRecommendation;
@@ -39,12 +40,12 @@ public class RecommendationService {
 
     @Transactional
     public Long savePreference(Long userId, PreferenceRequestDto request) {
-        ChildProfile child = childProfileRepository.findByIdAndUserId(request.getChildId(), userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+        childProfileRepository.findByIdAndUserId(request.getChildId(), userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHILD_ACCESS_DENIED));
 
         RecommendationPreference preference = RecommendationPreference.builder()
                 .userId(userId)
-                .childId(child.getId())
+                .childId(request.getChildId())
                 .region(request.getRegion())
                 .monthlyBudget(request.getMonthlyBudget())
                 .transportType(request.getTransportType())
@@ -55,6 +56,14 @@ public class RecommendationService {
                 .build();
 
         return preferenceRepository.save(preference).getId();
+    }
+
+    public PreferenceResponseDto getPreference(Long userId, Long preferenceId) {
+        RecommendationPreference preference = preferenceRepository
+                .findByIdAndUserId(preferenceId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
+
+        return PreferenceResponseDto.from(preference);
     }
 
     @Transactional
@@ -68,13 +77,10 @@ public class RecommendationService {
 
         int childAge = Period.between(child.getBirthDate(), LocalDate.now()).getYears();
 
-        // 기존 추천 결과 삭제 (재추천 시)
         aiRecommendationRepository.deleteAllByPreferenceId(preferenceId);
 
-        // QueryDSL 동적 필터
         List<Program> programs = programQueryRepository.findFilteredPrograms(preference, childAge);
 
-        // 점수 계산 및 정렬
         List<ScoredProgram> scored = new ArrayList<>();
         for (Program program : programs) {
             ScoreBreakdownDto score = scoringService.calculate(program, preference, childAge, 0.0, 0.0);
@@ -82,7 +88,6 @@ public class RecommendationService {
         }
         scored.sort(Comparator.comparing(s -> s.score.getTotalScore().negate()));
 
-        // ai_recommendation 저장
         List<AiRecommendation> recommendations = new ArrayList<>();
         for (int i = 0; i < scored.size(); i++) {
             ScoredProgram sp = scored.get(i);
@@ -112,7 +117,6 @@ public class RecommendationService {
             recommendations.add(aiRecommendationRepository.save(rec));
         }
 
-        // 페이지네이션 적용
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), recommendations.size());
         List<RecommendationResponseDto> result = new ArrayList<>();

@@ -3,6 +3,7 @@ package com.moment.momentbackend.recommendation;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.recommendation.dto.ScoreBreakdownDto;
 import com.moment.momentbackend.recommendation.entity.RecommendationPreference;
+import com.moment.momentbackend.recommendation.enums.*;
 import com.moment.momentbackend.recommendation.service.ScoringService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,15 +35,15 @@ class ScoringServiceTest {
         when(program.getIsFree()).thenReturn(true);
         when(program.getTargetAgeMin()).thenReturn(3);
         when(program.getTargetAgeMax()).thenReturn(13);
-        when(program.getClassType()).thenReturn("SMALL");
+        when(program.getClassType()).thenReturn("INDIVIDUAL");
         when(program.getIsRecruiting()).thenReturn(true);
         when(program.getRatingAvg()).thenReturn(new BigDecimal("5.0"));
 
         RecommendationPreference preference = RecommendationPreference.builder()
                 .userId(1L).childId(1L)
-                .monthlyBudget("FREE")
-                .classType("SMALL")
-                .onlinePreference("ANY")
+                .monthlyBudget(MonthlyBudget.UNDER_10)
+                .classType(ClassType.INDIVIDUAL)
+                .onlinePreference(OnlinePreference.BOTH)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -107,7 +108,7 @@ class ScoringServiceTest {
     }
 
     @Test
-    @DisplayName("FREE 예산 설정 시 무료 프로그램 만점")
+    @DisplayName("UNDER_10 예산 설정 시 무료 프로그램 만점")
     void budgetScore_freeProgram_fullScore() {
         Program program = mock(Program.class);
         when(program.getLatitude()).thenReturn(null);
@@ -122,7 +123,7 @@ class ScoringServiceTest {
 
         RecommendationPreference preference = RecommendationPreference.builder()
                 .userId(1L).childId(1L)
-                .monthlyBudget("FREE")
+                .monthlyBudget(MonthlyBudget.UNDER_10)
                 .createdAt(LocalDateTime.now())
                 .build();
 

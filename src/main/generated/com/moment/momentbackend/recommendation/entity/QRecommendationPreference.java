@@ -21,21 +21,21 @@ public class QRecommendationPreference extends EntityPathBase<RecommendationPref
 
     public final NumberPath<Long> childId = createNumber("childId", Long.class);
 
-    public final StringPath classType = createString("classType");
+    public final EnumPath<com.moment.momentbackend.recommendation.enums.ClassType> classType = createEnum("classType", com.moment.momentbackend.recommendation.enums.ClassType.class);
 
     public final DateTimePath<java.time.LocalDateTime> createdAt = createDateTime("createdAt", java.time.LocalDateTime.class);
 
     public final NumberPath<Long> id = createNumber("id", Long.class);
 
-    public final StringPath monthlyBudget = createString("monthlyBudget");
+    public final EnumPath<com.moment.momentbackend.recommendation.enums.MonthlyBudget> monthlyBudget = createEnum("monthlyBudget", com.moment.momentbackend.recommendation.enums.MonthlyBudget.class);
 
-    public final StringPath moveTime = createString("moveTime");
+    public final EnumPath<com.moment.momentbackend.recommendation.enums.MoveTime> moveTime = createEnum("moveTime", com.moment.momentbackend.recommendation.enums.MoveTime.class);
 
-    public final StringPath onlinePreference = createString("onlinePreference");
+    public final EnumPath<com.moment.momentbackend.recommendation.enums.OnlinePreference> onlinePreference = createEnum("onlinePreference", com.moment.momentbackend.recommendation.enums.OnlinePreference.class);
 
     public final StringPath region = createString("region");
 
-    public final StringPath transportType = createString("transportType");
+    public final EnumPath<com.moment.momentbackend.recommendation.enums.TransportType> transportType = createEnum("transportType", com.moment.momentbackend.recommendation.enums.TransportType.class);
 
     public final NumberPath<Long> userId = createNumber("userId", Long.class);
 
