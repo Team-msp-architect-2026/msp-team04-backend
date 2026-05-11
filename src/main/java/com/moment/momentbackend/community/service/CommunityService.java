@@ -93,6 +93,13 @@ public class CommunityService {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
+        // 댓글 좋아요 → 댓글 → 게시글 좋아요 → 게시글 순서로 삭제
+        List<CommunityComment> comments = communityCommentRepository.findByPostIdOrderByCreatedAtAsc(postId);
+        for (CommunityComment comment : comments) {
+            commentLikeRepository.deleteByCommentId(comment.getId());
+        }
+        communityCommentRepository.deleteByPostId(postId);
+        postLikeRepository.deleteByPostId(postId);
         communityPostRepository.delete(post);
     }
 
@@ -137,6 +144,8 @@ public class CommunityService {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
+        // 댓글 좋아요 먼저 삭제 후 댓글 삭제
+        commentLikeRepository.deleteByCommentId(commentId);
         communityCommentRepository.delete(comment);
         post.decreaseCommentCount();
     }
