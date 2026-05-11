@@ -44,8 +44,11 @@ public class RecommendationController {
             @AuthenticationPrincipal Long userId,
             @RequestParam Long childId,
             @RequestParam Long preferenceId,
+            @RequestParam(required = false, defaultValue = "0.0") double userLat,
+            @RequestParam(required = false, defaultValue = "0.0") double userLon,
             @PageableDefault(size = 10, sort = "rankNo", direction = Sort.Direction.ASC) Pageable pageable) {
-        Page<RecommendationResponseDto> result = recommendationService.recommend(userId, childId, preferenceId, pageable);
+        Page<RecommendationResponseDto> result =
+                recommendationService.recommend(userId, childId, preferenceId, pageable, userLat, userLon);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
