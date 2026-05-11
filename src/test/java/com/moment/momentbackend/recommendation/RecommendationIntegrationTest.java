@@ -1,6 +1,7 @@
 package com.moment.momentbackend.recommendation;
 
 import com.moment.momentbackend.child.entity.ChildProfile;
+import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.recommendation.dto.PreferenceRequestDto;
 import com.moment.momentbackend.recommendation.entity.AiRecommendation;
@@ -24,9 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,6 +42,9 @@ class RecommendationIntegrationTest {
 
     @Mock
     private ChildProfileRepository childProfileRepository;
+
+    @Mock
+    private ChildConcernRepository childConcernRepository;
 
     @Mock
     private com.moment.momentbackend.recommendation.repository.ProgramQueryRepository programQueryRepository;
@@ -104,7 +106,8 @@ class RecommendationIntegrationTest {
                 .build();
 
         when(childProfileRepository.findByIdAndUserId(childId, userId)).thenReturn(Optional.of(child));
-        when(preferenceRepository.findByIdAndUserId(preferenceId, userId)).thenReturn(Optional.of(preference)); // ← 수정
+        when(preferenceRepository.findByIdAndUserId(preferenceId, userId)).thenReturn(Optional.of(preference));
+        when(childConcernRepository.findByChildProfileId(childId)).thenReturn(List.of());
         when(programQueryRepository.findFilteredPrograms(any(), anyInt())).thenReturn(List.of());
         doNothing().when(aiRecommendationRepository).deleteAllByPreferenceId(preferenceId);
 
@@ -157,10 +160,11 @@ class RecommendationIntegrationTest {
                         .build();
 
         when(childProfileRepository.findByIdAndUserId(childId, userId)).thenReturn(Optional.of(child));
-        when(preferenceRepository.findByIdAndUserId(preferenceId, userId)).thenReturn(Optional.of(preference)); // ← 수정
+        when(preferenceRepository.findByIdAndUserId(preferenceId, userId)).thenReturn(Optional.of(preference));
+        when(childConcernRepository.findByChildProfileId(childId)).thenReturn(List.of());
         when(programQueryRepository.findFilteredPrograms(any(), anyInt()))
                 .thenReturn(List.of(program1, program2, program3, program4));
-        when(scoringService.calculate(any(), any(), anyInt(), anyDouble(), anyDouble()))
+        when(scoringService.calculate(any(), any(), anyInt(), anyDouble(), anyDouble(), anyList()))
                 .thenReturn(score);
         doNothing().when(aiRecommendationRepository).deleteAllByPreferenceId(preferenceId);
         when(aiRecommendationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));

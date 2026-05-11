@@ -1,10 +1,13 @@
 package com.moment.momentbackend.recommendation.service;
 
+import com.moment.momentbackend.child.entity.ChildConcern;
 import com.moment.momentbackend.child.entity.ChildProfile;
+import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
 import com.moment.momentbackend.program.entity.Program;
+import com.moment.momentbackend.recommendation.dto.AiRecommendationResponseDto;
 import com.moment.momentbackend.recommendation.dto.PreferenceRequestDto;
 import com.moment.momentbackend.recommendation.dto.PreferenceResponseDto;
 import com.moment.momentbackend.recommendation.dto.RecommendationResponseDto;
@@ -20,7 +23,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.moment.momentbackend.recommendation.dto.AiRecommendationResponseDto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,6 +38,7 @@ public class RecommendationService {
     private final RecommendationPreferenceRepository preferenceRepository;
     private final AiRecommendationRepository aiRecommendationRepository;
     private final ChildProfileRepository childProfileRepository;
+    private final ChildConcernRepository childConcernRepository;
     private final ProgramQueryRepository programQueryRepository;
     private final ScoringService scoringService;
 
@@ -81,16 +84,20 @@ public class RecommendationService {
 
         aiRecommendationRepository.deleteAllByPreferenceId(preferenceId);
 
+        List<String> concerns = childConcernRepository.findByChildProfileId(childId)
+                .stream()
+                .map(ChildConcern::getConcern)
+                .toList();
+
         List<Program> programs = programQueryRepository.findFilteredPrograms(preference, childAge);
 
         List<ScoredProgram> scored = new ArrayList<>();
         for (Program program : programs) {
-            ScoreBreakdownDto score = scoringService.calculate(program, preference, childAge, userLat, userLon);
+            ScoreBreakdownDto score = scoringService.calculate(
+                    program, preference, childAge, userLat, userLon, concerns);
             scored.add(new ScoredProgram(program, score));
         }
         scored.sort(Comparator.comparing(s -> s.score.getTotalScore().negate()));
-
-
 
         List<AiRecommendation> recommendations = new ArrayList<>();
         for (int i = 0; i < scored.size(); i++) {
@@ -177,6 +184,7 @@ public class RecommendationService {
         if (score.getScoreAge().doubleValue() > 15) sb.append("연령대가 딱 맞고 ");
         if (score.getScoreBudget().doubleValue() > 15) sb.append("예산 내 수업이며 ");
         if (score.getScoreReview().doubleValue() > 7) sb.append("리뷰 평점이 높습니다. ");
+        if (score.getScoreKeyword().doubleValue() > 0) sb.append("관심 키워드와 일치합니다. ");
         sb.append("(총점: ").append(score.getTotalScore()).append("점)");
         return sb.toString();
     }
