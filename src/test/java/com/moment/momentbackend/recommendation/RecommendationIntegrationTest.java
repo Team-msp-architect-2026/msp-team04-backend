@@ -5,6 +5,7 @@ import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.recommendation.dto.PreferenceRequestDto;
 import com.moment.momentbackend.recommendation.entity.AiRecommendation;
 import com.moment.momentbackend.recommendation.entity.RecommendationPreference;
+import com.moment.momentbackend.recommendation.enums.*;
 import com.moment.momentbackend.recommendation.repository.AiRecommendationRepository;
 import com.moment.momentbackend.recommendation.repository.RecommendationPreferenceRepository;
 import com.moment.momentbackend.recommendation.service.RecommendationService;
@@ -16,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import com.moment.momentbackend.recommendation.enums.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
@@ -103,7 +104,7 @@ class RecommendationIntegrationTest {
                 .build();
 
         when(childProfileRepository.findByIdAndUserId(childId, userId)).thenReturn(Optional.of(child));
-        when(preferenceRepository.findById(preferenceId)).thenReturn(Optional.of(preference));
+        when(preferenceRepository.findByIdAndUserId(preferenceId, userId)).thenReturn(Optional.of(preference)); // ← 수정
         when(programQueryRepository.findFilteredPrograms(any(), anyInt())).thenReturn(List.of());
         doNothing().when(aiRecommendationRepository).deleteAllByPreferenceId(preferenceId);
 
@@ -156,13 +157,12 @@ class RecommendationIntegrationTest {
                         .build();
 
         when(childProfileRepository.findByIdAndUserId(childId, userId)).thenReturn(Optional.of(child));
-        when(preferenceRepository.findById(preferenceId)).thenReturn(Optional.of(preference));
+        when(preferenceRepository.findByIdAndUserId(preferenceId, userId)).thenReturn(Optional.of(preference)); // ← 수정
         when(programQueryRepository.findFilteredPrograms(any(), anyInt()))
                 .thenReturn(List.of(program1, program2, program3, program4));
         when(scoringService.calculate(any(), any(), anyInt(), anyDouble(), anyDouble()))
                 .thenReturn(score);
         doNothing().when(aiRecommendationRepository).deleteAllByPreferenceId(preferenceId);
-
         when(aiRecommendationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         recommendationService.recommend(userId, childId, preferenceId, PageRequest.of(0, 10));
