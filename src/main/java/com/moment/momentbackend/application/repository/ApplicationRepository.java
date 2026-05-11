@@ -32,4 +32,11 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             @Param("statuses") List<ApplicationStatus> statuses,
             @Param("now") LocalDateTime now
     );
+
+    List<Application> findByUserIdOrderByAppliedAtDesc(Long userId);
+
+    List<Application> findByUserIdAndApplicationStatusOrderByAppliedAtDesc(
+            Long userId,
+            ApplicationStatus applicationStatus
+    );
 }
