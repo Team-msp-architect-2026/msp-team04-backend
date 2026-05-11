@@ -15,6 +15,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.moment.momentbackend.recommendation.dto.PreferenceResponseDto;
 
 import java.util.Map;
 
@@ -43,5 +44,14 @@ public class RecommendationController {
             @PageableDefault(size = 10, sort = "rankNo", direction = Sort.Direction.ASC) Pageable pageable) {
         Page<RecommendationResponseDto> result = recommendationService.recommend(userId, childId, preferenceId, pageable);
         return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    @Operation(summary = "추천 선호도 단건 조회")
+    @GetMapping("/api/recommendation-preferences/{id}")
+    public ResponseEntity<ApiResponse<PreferenceResponseDto>> getPreference(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long id) {
+        PreferenceResponseDto response = recommendationService.getPreference(userId, id);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

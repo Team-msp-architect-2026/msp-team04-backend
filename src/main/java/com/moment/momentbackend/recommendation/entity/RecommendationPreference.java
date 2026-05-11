@@ -1,9 +1,11 @@
 package com.moment.momentbackend.recommendation.entity;
 
+import com.moment.momentbackend.recommendation.enums.*;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,29 +27,34 @@ public class RecommendationPreference {
     @Column
     private String region;
 
+    @Enumerated(EnumType.STRING)
     @Column
-    private String monthlyBudget;
+    private MonthlyBudget monthlyBudget;
 
+    @Enumerated(EnumType.STRING)
     @Column
-    private String transportType;
+    private TransportType transportType;
 
+    @Enumerated(EnumType.STRING)
     @Column
-    private String moveTime;
+    private MoveTime moveTime;
 
+    @Enumerated(EnumType.STRING)
     @Column
-    private String onlinePreference;
+    private OnlinePreference onlinePreference;
 
+    @Enumerated(EnumType.STRING)
     @Column
-    private String classType;
+    private ClassType classType;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Builder
     public RecommendationPreference(Long userId, Long childId, String region,
-                                    String monthlyBudget, String transportType,
-                                    String moveTime, String onlinePreference,
-                                    String classType, LocalDateTime createdAt) {
+                                    MonthlyBudget monthlyBudget, TransportType transportType,
+                                    MoveTime moveTime, OnlinePreference onlinePreference,
+                                    ClassType classType, LocalDateTime createdAt) {
         this.userId = userId;
         this.childId = childId;
         this.region = region;

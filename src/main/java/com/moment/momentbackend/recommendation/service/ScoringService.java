@@ -11,7 +11,6 @@ import java.math.RoundingMode;
 @Service
 public class ScoringService {
 
-    // 가중치 상수
     private static final double W_DISTANCE = 25.0;
     private static final double W_BUDGET = 20.0;
     private static final double W_AGE = 20.0;
@@ -25,7 +24,7 @@ public class ScoringService {
         double scoreDistance = calcDistanceScore(program, userLat, userLon);
         double scoreBudget = calcBudgetScore(program, preference);
         double scoreAge = calcAgeScore(program, childAge);
-        double scoreKeyword = 0.0; // 현재 MVP에서는 0
+        double scoreKeyword = 0.0;
         double scoreClassType = calcClassTypeScore(program, preference);
         double scoreRecruiting = program.getIsRecruiting() ? W_RECRUITING : 0.0;
         double scoreReview = calcReviewScore(program);
@@ -49,7 +48,7 @@ public class ScoringService {
     private double calcDistanceScore(Program program, double userLat, double userLon) {
         if (program.getLatitude() == null || program.getLongitude() == null
                 || userLat == 0.0 || userLon == 0.0) {
-            return W_DISTANCE * 0.5; // 위치 정보 없으면 중간 점수
+            return W_DISTANCE * 0.5;
         }
         double dist = haversine(userLat, userLon,
                 program.getLatitude().doubleValue(),
@@ -67,12 +66,10 @@ public class ScoringService {
 
         int price = program.getPrice();
         return switch (preference.getMonthlyBudget()) {
-            case "FREE" -> program.getIsFree() ? W_BUDGET : 0.0;
-            case "0-10" -> price <= 100000 ? W_BUDGET : W_BUDGET * 0.3;
-            case "10-20" -> price <= 200000 ? W_BUDGET : W_BUDGET * 0.3;
-            case "20+" -> W_BUDGET;
-            case "ANY" -> W_BUDGET * 0.8;
-            default -> W_BUDGET * 0.5;
+            case UNDER_10 -> price <= 100000 ? W_BUDGET : W_BUDGET * 0.3;
+            case UNDER_30 -> price <= 300000 ? W_BUDGET : W_BUDGET * 0.3;
+            case UNDER_50 -> price <= 500000 ? W_BUDGET : W_BUDGET * 0.3;
+            case OVER_50 -> W_BUDGET;
         };
     }
 
@@ -89,7 +86,10 @@ public class ScoringService {
         if (preference.getClassType() == null || program.getClassType() == null) {
             return W_CLASS_TYPE * 0.5;
         }
-        return preference.getClassType().equals(program.getClassType()) ? W_CLASS_TYPE : W_CLASS_TYPE * 0.2;
+        // enum → String 변환 후 비교
+        return preference.getClassType().name().equals(program.getClassType())
+                ? W_CLASS_TYPE
+                : W_CLASS_TYPE * 0.2;
     }
 
     private double calcReviewScore(Program program) {
@@ -97,7 +97,6 @@ public class ScoringService {
         return (rating / 5.0) * W_REVIEW;
     }
 
-    // Haversine 공식 (km 반환)
     public double haversine(double lat1, double lon1, double lat2, double lon2) {
         final int R = 6371;
         double dLat = Math.toRadians(lat2 - lat1);

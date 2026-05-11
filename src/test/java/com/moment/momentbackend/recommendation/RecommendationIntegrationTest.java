@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import com.moment.momentbackend.recommendation.enums.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -63,11 +64,11 @@ class RecommendationIntegrationTest {
         PreferenceRequestDto request = mock(PreferenceRequestDto.class);
         when(request.getChildId()).thenReturn(1L);
         when(request.getRegion()).thenReturn("서울");
-        when(request.getMonthlyBudget()).thenReturn("FREE");
-        when(request.getTransportType()).thenReturn("WALK");
-        when(request.getMoveTime()).thenReturn("10MIN");
-        when(request.getOnlinePreference()).thenReturn("ANY");
-        when(request.getClassType()).thenReturn("SMALL");
+        when(request.getMonthlyBudget()).thenReturn(MonthlyBudget.UNDER_10);
+        when(request.getTransportType()).thenReturn(TransportType.WALK);
+        when(request.getMoveTime()).thenReturn(MoveTime.UNDER_15);
+        when(request.getOnlinePreference()).thenReturn(OnlinePreference.BOTH);
+        when(request.getClassType()).thenReturn(ClassType.INDIVIDUAL);
 
         when(childProfileRepository.findByIdAndUserId(1L, userId)).thenReturn(Optional.of(child));
 
