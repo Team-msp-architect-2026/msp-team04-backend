@@ -109,7 +109,7 @@ class RecommendationIntegrationTest {
         doNothing().when(aiRecommendationRepository).deleteAllByPreferenceId(preferenceId);
 
         Page<com.moment.momentbackend.recommendation.dto.RecommendationResponseDto> result =
-                recommendationService.recommend(userId, childId, preferenceId, PageRequest.of(0, 10));
+                recommendationService.recommend(userId, childId, preferenceId, PageRequest.of(0, 10), 0.0, 0.0);
 
         assertThat(result.getContent()).isEmpty();
         assertThat(result.getTotalElements()).isEqualTo(0);
@@ -165,7 +165,7 @@ class RecommendationIntegrationTest {
         doNothing().when(aiRecommendationRepository).deleteAllByPreferenceId(preferenceId);
         when(aiRecommendationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        recommendationService.recommend(userId, childId, preferenceId, PageRequest.of(0, 10));
+        recommendationService.recommend(userId, childId, preferenceId, PageRequest.of(0, 10), 0.0, 0.0);
 
         verify(aiRecommendationRepository, times(4)).save(argThat(rec -> {
             AiRecommendation r = (AiRecommendation) rec;

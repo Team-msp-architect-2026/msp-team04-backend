@@ -69,7 +69,8 @@ public class RecommendationService {
 
     @Transactional
     public Page<RecommendationResponseDto> recommend(Long userId, Long childId,
-                                                     Long preferenceId, Pageable pageable) {
+                                                     Long preferenceId, Pageable pageable,
+                                                     double userLat, double userLon) {
         ChildProfile child = childProfileRepository.findByIdAndUserId(childId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
@@ -84,7 +85,7 @@ public class RecommendationService {
 
         List<ScoredProgram> scored = new ArrayList<>();
         for (Program program : programs) {
-            ScoreBreakdownDto score = scoringService.calculate(program, preference, childAge, 0.0, 0.0);
+            ScoreBreakdownDto score = scoringService.calculate(program, preference, childAge, userLat, userLon);
             scored.add(new ScoredProgram(program, score));
         }
         scored.sort(Comparator.comparing(s -> s.score.getTotalScore().negate()));
