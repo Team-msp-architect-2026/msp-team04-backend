@@ -16,7 +16,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.moment.momentbackend.recommendation.dto.PreferenceResponseDto;
+import com.moment.momentbackend.recommendation.dto.AiRecommendationResponseDto;
+import java.util.List;
 
+import java.util.List;
 import java.util.Map;
 
 @Tag(name = "Recommendation", description = "추천 엔진 API")
@@ -53,5 +56,38 @@ public class RecommendationController {
             @PathVariable Long id) {
         PreferenceResponseDto response = recommendationService.getPreference(userId, id);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @Operation(summary = "자녀별 추천 결과 히스토리 조회")
+    @GetMapping("/api/recommendations/history")
+    public ResponseEntity<ApiResponse<List<AiRecommendationResponseDto>>> getRecommendationHistory(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam Long childId) {
+        List<AiRecommendationResponseDto> result =
+                recommendationService.getRecommendationHistory(userId, childId);
+
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    @Operation(summary = "선호도 ID 기준 추천 결과 조회")
+    @GetMapping("/api/recommendations/{preferenceId}")
+    public ResponseEntity<ApiResponse<List<AiRecommendationResponseDto>>> getRecommendationsByPreference(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long preferenceId) {
+        List<AiRecommendationResponseDto> result =
+                recommendationService.getRecommendationsByPreference(userId, preferenceId);
+
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    @Operation(summary = "선호도 ID 기준 TOP3 추천 결과 조회")
+    @GetMapping("/api/recommendations/{preferenceId}/top3")
+    public ResponseEntity<ApiResponse<List<AiRecommendationResponseDto>>> getTop3Recommendations(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long preferenceId) {
+        List<AiRecommendationResponseDto> result =
+                recommendationService.getTop3Recommendations(userId, preferenceId);
+
+        return ResponseEntity.ok(ApiResponse.ok(result));
     }
 }

@@ -4,65 +4,78 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor
-@Table(name = "ai_recommendation")
+@Table(
+        name = "ai_recommendation",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_ai_recommendation_preference_program",
+                        columnNames = {"preference_id", "program_id"}
+                ),
+                @UniqueConstraint(
+                        name = "uk_ai_recommendation_preference_rank",
+                        columnNames = {"preference_id", "rank_no"}
+                )
+        }
+)
 public class AiRecommendation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
+    @Column(name = "child_id", nullable = false)
     private Long childId;
 
-    @Column(nullable = false)
+    @Column(name = "preference_id", nullable = false)
     private Long preferenceId;
 
-    @Column(nullable = false)
+    @Column(name = "program_id", nullable = false)
     private Long programId;
 
-    @Column(nullable = false)
+    @Column(name = "total_score", nullable = false)
     private BigDecimal totalScore;
 
-    @Column
+    @Column(name = "score_distance")
     private BigDecimal scoreDistance;
 
-    @Column
+    @Column(name = "score_budget")
     private BigDecimal scoreBudget;
 
-    @Column
+    @Column(name = "score_age")
     private BigDecimal scoreAge;
 
-    @Column
+    @Column(name = "score_keyword")
     private BigDecimal scoreKeyword;
 
-    @Column
+    @Column(name = "score_class_type")
     private BigDecimal scoreClassType;
 
-    @Column
+    @Column(name = "score_recruiting")
     private BigDecimal scoreRecruiting;
 
-    @Column
+    @Column(name = "score_review")
     private BigDecimal scoreReview;
 
-    @Column
+    @Column(name = "rank_no")
     private Integer rankNo;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "recommend_reason", columnDefinition = "TEXT")
     private String recommendReason;
 
-    @Column(nullable = false)
+    @Column(name = "is_top3", nullable = false)
     private Boolean isTop3;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Builder

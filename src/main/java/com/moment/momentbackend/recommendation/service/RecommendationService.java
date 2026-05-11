@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.moment.momentbackend.recommendation.dto.AiRecommendationResponseDto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -72,8 +73,8 @@ public class RecommendationService {
         ChildProfile child = childProfileRepository.findByIdAndUserId(childId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
-        RecommendationPreference preference = preferenceRepository.findById(preferenceId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+        RecommendationPreference preference = preferenceRepository.findByIdAndUserId(preferenceId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
 
         int childAge = Period.between(child.getBirthDate(), LocalDate.now()).getYears();
 
@@ -87,6 +88,8 @@ public class RecommendationService {
             scored.add(new ScoredProgram(program, score));
         }
         scored.sort(Comparator.comparing(s -> s.score.getTotalScore().negate()));
+
+
 
         List<AiRecommendation> recommendations = new ArrayList<>();
         for (int i = 0; i < scored.size(); i++) {
@@ -128,6 +131,42 @@ public class RecommendationService {
         }
 
         return new PageImpl<>(result, pageable, recommendations.size());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AiRecommendationResponseDto> getRecommendationHistory(Long userId, Long childId) {
+        childProfileRepository.findByIdAndUserId(childId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHILD_ACCESS_DENIED));
+
+        return aiRecommendationRepository
+                .findAllByUserIdAndChildIdOrderByCreatedAtDescRankNoAsc(userId, childId)
+                .stream()
+                .map(AiRecommendationResponseDto::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AiRecommendationResponseDto> getRecommendationsByPreference(Long userId, Long preferenceId) {
+        preferenceRepository.findByIdAndUserId(preferenceId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
+
+        return aiRecommendationRepository
+                .findAllByUserIdAndPreferenceIdOrderByRankNoAsc(userId, preferenceId)
+                .stream()
+                .map(AiRecommendationResponseDto::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AiRecommendationResponseDto> getTop3Recommendations(Long userId, Long preferenceId) {
+        preferenceRepository.findByIdAndUserId(preferenceId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
+
+        return aiRecommendationRepository
+                .findAllByUserIdAndPreferenceIdAndIsTop3TrueOrderByRankNoAsc(userId, preferenceId)
+                .stream()
+                .map(AiRecommendationResponseDto::from)
+                .toList();
     }
 
     private String buildReason(Program program, ScoreBreakdownDto score, boolean isTop3) {
