@@ -20,4 +20,6 @@ public interface ProgramRepository extends JpaRepository<Program, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Program p WHERE p.id = :id")
     Optional<Program> findByIdForUpdate(@Param("id") Long id);
+
+    long countByIsFreeTrueAndIsPublicTrue();
 }
