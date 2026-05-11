@@ -42,9 +42,10 @@ public class CommunityController {
 
     @GetMapping("/{postId}")
     public ApiResponse<PostDetailResponse> getPostDetail(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
     ) {
-        return ApiResponse.ok(communityService.getPostDetail(postId));
+        return ApiResponse.ok(communityService.getPostDetail(userId, postId));
     }
 
     @PutMapping("/{postId}")
@@ -78,9 +79,10 @@ public class CommunityController {
 
     @GetMapping("/{postId}/comments")
     public ApiResponse<List<CommentResponse>> getCommentList(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
     ) {
-        return ApiResponse.ok(communityService.getCommentList(postId));
+        return ApiResponse.ok(communityService.getCommentList(userId, postId));
     }
 
     @DeleteMapping("/{postId}/comments/{commentId}")
@@ -93,7 +95,16 @@ public class CommunityController {
         return ApiResponse.ok(null, "댓글이 삭제되었습니다.");
     }
 
-    // ===================== 좋아요 =====================
+    @PostMapping("/{postId}/comments/{commentId}/like")
+    public ApiResponse<CommentLikeResponse> toggleCommentLike(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @PathVariable Long commentId
+    ) {
+        return ApiResponse.ok(communityService.toggleCommentLike(userId, postId, commentId));
+    }
+
+    // ===================== 게시글 좋아요 =====================
 
     @PostMapping("/{postId}/like")
     public ApiResponse<LikeResponse> toggleLike(

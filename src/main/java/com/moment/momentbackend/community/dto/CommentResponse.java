@@ -15,15 +15,19 @@ public class CommentResponse {
     private Long userId;
     private String content;
     private Integer likeCount;
+    private boolean likedByMe;
+    private boolean isMine;
     private LocalDateTime createdAt;
 
-    public static CommentResponse of(CommunityComment comment) {
+    public static CommentResponse of(CommunityComment comment, boolean likedByMe, boolean isMine) {
         return CommentResponse.builder()
                 .commentId(comment.getId())
                 .postId(comment.getPostId())
                 .userId(comment.getUserId())
                 .content(comment.getContent())
                 .likeCount(comment.getLikeCount())
+                .likedByMe(likedByMe)
+                .isMine(isMine)
                 .createdAt(comment.getCreatedAt())
                 .build();
     }
