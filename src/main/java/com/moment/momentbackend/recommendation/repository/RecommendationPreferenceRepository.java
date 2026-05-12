@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface RecommendationPreferenceRepository extends JpaRepository<RecommendationPreference, Long> {
     Optional<RecommendationPreference> findByIdAndUserId(Long id, Long userId);
+    Optional<RecommendationPreference> findTopByChildIdOrderByCreatedAtDesc(Long childId);
 }
