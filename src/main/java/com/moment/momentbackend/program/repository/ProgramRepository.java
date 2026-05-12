@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ProgramRepository extends JpaRepository<Program, Long> {
@@ -22,4 +23,10 @@ public interface ProgramRepository extends JpaRepository<Program, Long> {
     Optional<Program> findByIdForUpdate(@Param("id") Long id);
 
     long countByIsFreeTrueAndIsPublicTrue();
+
+    @Query("SELECT p FROM Program p WHERE p.category IN :categories AND p.isRecruiting = true AND p.isPublic = true ORDER BY p.ratingAvg DESC")
+    List<Program> findComplementaryPrograms(@Param("categories") List<String> categories);
+
+    @Query("SELECT p FROM Program p WHERE p.isRecruiting = true AND p.isPublic = true AND p.category != :category ORDER BY p.ratingAvg DESC")
+    List<Program> findOtherRecruitingPrograms(@Param("category") String category);
 }
