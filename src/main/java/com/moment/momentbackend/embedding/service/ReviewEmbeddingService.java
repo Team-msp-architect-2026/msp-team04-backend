@@ -3,6 +3,7 @@ package com.moment.momentbackend.embedding.service;
 import com.moment.momentbackend.embedding.client.EmbeddingServiceClient;
 import com.moment.momentbackend.embedding.dto.EmbeddingRequestDto;
 import com.moment.momentbackend.embedding.dto.EmbeddingResponseDto;
+import com.moment.momentbackend.opensearch.service.OpenSearchIndexService;
 import com.moment.momentbackend.review.entity.Review;
 import com.moment.momentbackend.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class ReviewEmbeddingService {
 
     private final ReviewRepository reviewRepository;
     private final EmbeddingServiceClient embeddingServiceClient;
+    private final OpenSearchIndexService openSearchIndexService;
 
     public void embedAll() {
         List<Review> reviews = reviewRepository.findAll();
@@ -36,6 +38,12 @@ public class ReviewEmbeddingService {
 
             if (response.isSuccess()) {
                 // TODO: pgvector 설치 후 review.setEmbedding(response.getVector()) 추가
+                openSearchIndexService.upsertReview(
+                        review.getId(),
+                        review.getProgramId(),
+                        review.getRating() != null ? review.getRating().floatValue() : 0f,
+                        response.getVector()
+                );
                 successCount++;
             } else {
                 failCount++;
@@ -45,7 +53,6 @@ public class ReviewEmbeddingService {
         log.info("[후기 임베딩 완료] 성공={}, 실패={}", successCount, failCount);
     }
 
-    // 후기 텍스트 정규화 - 평점 + 내용 조합
     private String normalize(Review review) {
         return String.format("평점: %s | 내용: %s",
                 review.getRating() != null ? review.getRating().toPlainString() : "0",

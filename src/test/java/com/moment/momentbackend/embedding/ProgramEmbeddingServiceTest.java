@@ -4,6 +4,7 @@ import com.moment.momentbackend.embedding.client.EmbeddingServiceClient;
 import com.moment.momentbackend.embedding.dto.EmbeddingRequestDto;
 import com.moment.momentbackend.embedding.dto.EmbeddingResponseDto;
 import com.moment.momentbackend.embedding.service.ProgramEmbeddingService;
+import com.moment.momentbackend.opensearch.service.OpenSearchIndexService;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.program.repository.ProgramRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +28,9 @@ class ProgramEmbeddingServiceTest {
     @Mock
     private EmbeddingServiceClient embeddingServiceClient;
 
+    @Mock
+    private OpenSearchIndexService openSearchIndexService;
+
     @InjectMocks
     private ProgramEmbeddingService programEmbeddingService;
 
@@ -36,12 +40,13 @@ class ProgramEmbeddingServiceTest {
         // given
         Program program = mock(Program.class);
         when(program.getId()).thenReturn(1L);
-        when(program.getTitle()).thenReturn("초등 수학 기초반");
+        when(program.getTitle()).thenReturn("테스트 교육 프로그램");
         when(program.getCategory()).thenReturn("EDUCATION");
-        when(program.getDescription()).thenReturn("수학 기초 수업");
-        when(program.getRegion()).thenReturn("강남구");
+        when(program.getDescription()).thenReturn("교육 프로그램 설명");
+        when(program.getRegion()).thenReturn("서울특별시");
         when(program.getTargetAgeMin()).thenReturn(6);
         when(program.getTargetAgeMax()).thenReturn(9);
+
         when(programRepository.findAll()).thenReturn(List.of(program));
         when(embeddingServiceClient.embed(any(EmbeddingRequestDto.class)))
                 .thenReturn(new EmbeddingResponseDto(1L, "PROGRAM", new float[1536], true));
@@ -52,10 +57,11 @@ class ProgramEmbeddingServiceTest {
         // then
         verify(programRepository, times(1)).findAll();
         verify(embeddingServiceClient, times(1)).embed(any());
+        verify(openSearchIndexService, times(1)).upsertProgram(any(), any(), any(), any());
     }
 
     @Test
-    @DisplayName("프로그램 필드가 null이어도 정규화 시 오류 없음")
+    @DisplayName("프로그램 필드가 null이어도 예외 없음")
     void embedAll_null_fields() {
         // given
         Program program = mock(Program.class);
@@ -66,11 +72,13 @@ class ProgramEmbeddingServiceTest {
         when(program.getRegion()).thenReturn(null);
         when(program.getTargetAgeMin()).thenReturn(0);
         when(program.getTargetAgeMax()).thenReturn(0);
+
         when(programRepository.findAll()).thenReturn(List.of(program));
         when(embeddingServiceClient.embed(any(EmbeddingRequestDto.class)))
                 .thenReturn(new EmbeddingResponseDto(1L, "PROGRAM", null, false));
 
-        // when & then (예외 없이 실행되면 통과)
+        // when & then (예외 없이 실행되면 성공)
         programEmbeddingService.embedAll();
+        verify(openSearchIndexService, never()).upsertProgram(any(), any(), any(), any());
     }
 }
