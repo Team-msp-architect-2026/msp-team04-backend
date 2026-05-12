@@ -1,18 +1,59 @@
 package com.moment.momentbackend.embedding.service;
 
+import com.moment.momentbackend.embedding.client.EmbeddingServiceClient;
+import com.moment.momentbackend.embedding.dto.EmbeddingRequestDto;
+import com.moment.momentbackend.embedding.dto.EmbeddingResponseDto;
+import com.moment.momentbackend.review.entity.Review;
+import com.moment.momentbackend.review.repository.ReviewRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ReviewEmbeddingService {
 
-    // TODO: 팀원 Review 엔티티 개발 완료 후 구현
-    // - ReviewRepository 주입
-    // - 후기 본문 / 별점 텍스트 정규화
-    // - EmbeddingServiceClient 호출
+    private final ReviewRepository reviewRepository;
+    private final EmbeddingServiceClient embeddingServiceClient;
 
     public void embedAll() {
-        log.info("[후기 임베딩] Review 엔티티 개발 후 구현 예정");
+        List<Review> reviews = reviewRepository.findAll();
+        log.info("[후기 임베딩 시작] 총 {}건", reviews.size());
+
+        int successCount = 0;
+        int failCount = 0;
+
+        for (Review review : reviews) {
+            String normalizedText = normalize(review);
+            EmbeddingRequestDto request = new EmbeddingRequestDto(
+                    review.getId(), "REVIEW", normalizedText
+            );
+
+            EmbeddingResponseDto response = embeddingServiceClient.embed(request);
+
+            if (response.isSuccess()) {
+                // TODO: pgvector 설치 후 review.setEmbedding(response.getVector()) 추가
+                successCount++;
+            } else {
+                failCount++;
+            }
+        }
+
+        log.info("[후기 임베딩 완료] 성공={}, 실패={}", successCount, failCount);
+    }
+
+    // 후기 텍스트 정규화 - 평점 + 내용 조합
+    private String normalize(Review review) {
+        return String.format("평점: %s | 내용: %s",
+                review.getRating() != null ? review.getRating().toPlainString() : "0",
+                nullSafe(review.getContent())
+        );
+    }
+
+    private String nullSafe(String value) {
+        return value != null ? value : "";
     }
 }
