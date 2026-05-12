@@ -16,6 +16,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.moment.momentbackend.benefit.entity.BenefitMaster;
+import com.moment.momentbackend.child.entity.ChildConcern;
+import com.moment.momentbackend.recommendation.repository.RecommendationPreferenceRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -38,6 +41,7 @@ class AiReportServiceTest {
     @Mock private BenefitMatchRepository benefitMatchRepository;
     @Mock private AiRecommendationRepository aiRecommendationRepository;
     @Mock private ProgramRepository programRepository;
+    @Mock private RecommendationPreferenceRepository preferenceRepository;
 
     @Test
     @DisplayName("리포트 신규 생성 - 정상 케이스")
@@ -171,5 +175,60 @@ class AiReportServiceTest {
         AiReportResponseDto result = aiReportService.generateReport(userId, childId);
 
         assertThat(result.getAiMatchScore()).isEqualByComparingTo(BigDecimal.valueOf(20.0));
+    }
+    @Test
+    @DisplayName("Raw 리포트 조회 - 정상 케이스")
+    void getRawReport_success() {
+        Long userId = 1L, childId = 1L;
+
+        // ChildProfile mock
+        ChildProfile child = mock(ChildProfile.class);
+        given(child.getChildName()).willReturn("테스트아이");
+        given(child.getBirthDate()).willReturn(java.time.LocalDate.now().minusYears(5));
+
+        ChildConcern concern = mock(ChildConcern.class);
+        given(concern.getConcern()).willReturn("언어발달");
+        given(child.getConcerns()).willReturn(List.of(concern));
+
+        given(childProfileRepository.findByIdAndUserId(childId, userId))
+                .willReturn(Optional.of(child));
+
+        // 선호도 mock
+        com.moment.momentbackend.recommendation.entity.RecommendationPreference pref =
+                mock(com.moment.momentbackend.recommendation.entity.RecommendationPreference.class);
+        given(pref.getRegion()).willReturn("서울 강남구");
+        given(pref.getMonthlyBudget()).willReturn(null);
+        given(preferenceRepository.findTopByChildIdOrderByCreatedAtDesc(childId))
+                .willReturn(Optional.of(pref));
+
+        // 지원금 mock - 돌봄 타입
+        BenefitMaster benefitMaster = mock(BenefitMaster.class);
+        given(benefitMaster.getBenefitType()).willReturn("돌봄");
+
+        BenefitMatch match = mock(BenefitMatch.class);
+        given(match.getMatchStatus()).willReturn("APPLICABLE");
+        given(match.getExpectedMonthlySaving()).willReturn(50000);
+        given(match.getBenefit()).willReturn(benefitMaster);
+        given(benefitMatchRepository.findAllByChildIdWithBenefit(childId))
+                .willReturn(List.of(match));
+
+        given(programRepository.countByIsFreeTrueAndIsPublicTrue()).willReturn(3L);
+        given(aiRecommendationRepository.countByChildId(childId)).willReturn(2L);
+
+        // 실행
+        com.moment.momentbackend.report.dto.ParentingRawReportResponseDto result =
+                aiReportService.getRawReport(userId, childId);
+
+        // 검증
+        assertThat(result).isNotNull();
+        assertThat(result.getChildInfo().getChildName()).isEqualTo("테스트아이");
+        assertThat(result.getChildInfo().getAge()).isEqualTo(5);
+        assertThat(result.getChildInfo().getConcerns()).containsExactly("언어발달");
+        assertThat(result.getSupportCount()).isEqualTo(1);
+        assertThat(result.getFreeProgramCount()).isEqualTo(3);
+        assertThat(result.getRecommendCount()).isEqualTo(2);
+        assertThat(result.getSavingsBreakdown().getChildcareSupportAmount()).isEqualTo(50000);
+        assertThat(result.getSavingsBreakdown().getTotalMonthlySaving()).isEqualTo(50000 + 3 * 20_000);
+        assertThat(result.getCalculationBasis()).isNotBlank();
     }
 }
