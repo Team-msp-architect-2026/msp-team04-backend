@@ -20,7 +20,7 @@ public class SemanticSearchController {
 
     @GetMapping("/semantic")
     public ResponseEntity<List<SemanticSearchResponseDto>> semanticSearch(
-            @RequestParam String q) {
+            @RequestParam("q") String q) {
         return ResponseEntity.ok(semanticSearchService.search(q));
     }
 }

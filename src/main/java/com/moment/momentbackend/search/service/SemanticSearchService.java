@@ -51,7 +51,7 @@ public class SemanticSearchService {
                     .index(PROGRAM_INDEX)
                     .query(q -> q
                             .knn(k -> k
-                                    .field("vector")
+                                    .field("embedding")
                                     .vector(queryVector)
                                     .k(TOP_K)
                             )
