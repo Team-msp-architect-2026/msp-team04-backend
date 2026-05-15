@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.math.BigDecimal;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class SemanticSearchResponseDto {
 
     private Long programId;
@@ -20,4 +20,5 @@ public class SemanticSearchResponseDto {
     private Integer reviewCount;
     private Boolean isRecruiting;
     private Double semanticScore;
+    private Double rerankScore;
 }
