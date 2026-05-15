@@ -9,12 +9,14 @@ import com.moment.momentbackend.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 import com.moment.momentbackend.auth.jwt.JwtTokenProvider;
+import java.io.IOException;
 
 @Tag(name = "Auth", description = "인증 관련 API")
 @RestController
@@ -34,6 +36,20 @@ public class AuthController {
             @Valid @RequestBody KakaoLoginRequestDto request) {
         KakaoLoginResponseDto response = authService.kakaoLogin(request);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/kakao")
+    public void kakaoLoginRedirect(
+            @RequestParam("code") String code,
+            HttpServletResponse response) throws IOException {
+        KakaoLoginRequestDto request = new KakaoLoginRequestDto(code);
+        KakaoLoginResponseDto tokens = authService.kakaoLogin(request);
+
+        String redirectUrl = "momentapp://auth"
+                + "?accessToken=" + tokens.getAccessToken()
+                + "&refreshToken=" + tokens.getRefreshToken();
+
+        response.sendRedirect(redirectUrl);
     }
 
     @Operation(summary = "토큰 재발급", description = "refreshToken으로 새 accessToken 발급")

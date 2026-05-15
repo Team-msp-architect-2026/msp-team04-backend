@@ -19,12 +19,17 @@ public class KakaoAuthClient {
     @Value("${kakao.client-id}")
     private String clientId;
 
+    @Value("${kakao.client-secret:}")
+    private String clientSecret;
+
     @Value("${kakao.redirect-uri}")
     private String redirectUri;
-
     private final RestTemplate restTemplate = new RestTemplate();
 
     public String getAccessToken(String code) {
+        log.info("redirect_uri 확인: {}", redirectUri);
+        log.info("code 확인: {}", code);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -33,16 +38,26 @@ public class KakaoAuthClient {
         body.add("client_id", clientId);
         body.add("redirect_uri", redirectUri);
         body.add("code", code);
+        if (clientSecret != null && !clientSecret.isBlank()) {
+            body.add("client_secret", clientSecret);
+        }
+
+        log.info("카카오 요청 body: {}", body);
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                "https://kauth.kakao.com/oauth/token",
-                request,
-                Map.class
-        );
-
-        return (String) response.getBody().get("access_token");
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    "https://kauth.kakao.com/oauth/token",
+                    request,
+                    Map.class
+            );
+            return (String) response.getBody().get("access_token");
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            log.error("카카오 토큰 에러 상태: {}", e.getStatusCode());
+            log.error("카카오 토큰 에러 바디: {}", e.getResponseBodyAsString());
+            throw e;
+        }
     }
 
     public Map<String, Object> getUserInfo(String accessToken) {
