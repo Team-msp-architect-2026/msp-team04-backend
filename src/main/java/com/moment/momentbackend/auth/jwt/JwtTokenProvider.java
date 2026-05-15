@@ -64,4 +64,18 @@ public class JwtTokenProvider {
     public Long getUserId(String token) {
         return Long.parseLong(parseClaims(token).getSubject());
     }
+
+    public static void main(String[] args) {
+        String secret = "bW9tZW50LWxvY2FsLXRlc3Qtc2VjcmV0LWtleS0xMjM0NTY=";
+        byte[] keyBytes = Base64.getDecoder().decode(secret);
+        Key key = Keys.hmacShaKeyFor(keyBytes);
+        Date now = new Date();
+        String token = Jwts.builder()
+                .setSubject("1")
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + 86400000L))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+        System.out.println(token);
+    }
 }
