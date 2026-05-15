@@ -1,6 +1,7 @@
 package com.moment.momentbackend.search.controller;
 
 import com.moment.momentbackend.global.response.ApiResponse;
+import com.moment.momentbackend.search.dto.AiSearchSuggestionResponse;
 import com.moment.momentbackend.search.dto.RecentSearchResponse;
 import com.moment.momentbackend.search.dto.SearchProgramResponse;
 import com.moment.momentbackend.search.service.SearchService;
@@ -35,6 +36,13 @@ public class SearchController {
             @AuthenticationPrincipal Long userId
     ) {
         return ApiResponse.ok(searchService.getRecentSearches(userId));
+    }
+
+    @GetMapping("/suggestions")
+    public ApiResponse<List<AiSearchSuggestionResponse>> getSearchSuggestions(
+            @AuthenticationPrincipal Long userId
+    ) {
+        return ApiResponse.ok(searchService.getSearchSuggestions(userId));
     }
 
     @DeleteMapping("/recent")
