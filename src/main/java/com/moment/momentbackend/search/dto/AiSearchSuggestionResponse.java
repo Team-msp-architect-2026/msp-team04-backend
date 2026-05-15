@@ -21,6 +21,15 @@ public class AiSearchSuggestionResponse {
         this.createdAt = createdAt;
     }
 
+    public static AiSearchSuggestionResponse fromGeneratedKeyword(String keyword) {
+        return new AiSearchSuggestionResponse(
+                null,
+                keyword,
+                "PERSONAL",
+                LocalDateTime.now()
+        );
+    }
+
     public static AiSearchSuggestionResponse fromRecentSearch(SearchHistory searchHistory) {
         return new AiSearchSuggestionResponse(
                 searchHistory.getId(),
