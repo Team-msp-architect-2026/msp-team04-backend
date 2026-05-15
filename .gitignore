@@ -50,3 +50,4 @@ out/
 .vscode/
 
 k8s/secret.yaml.env
+k8s/secret.yaml
