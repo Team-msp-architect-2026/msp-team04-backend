@@ -22,8 +22,8 @@ public class AiApplicationController {
     @GetMapping("/start-date")
     public ResponseEntity<ApiResponse<StartDateResponseDto>> getStartDate(
             @AuthenticationPrincipal Long userId,
-            @RequestParam Long programId,
-            @RequestParam Long profileId) {
+            @RequestParam("programId") Long programId,
+            @RequestParam("profileId") Long profileId) {
         return ResponseEntity.ok(ApiResponse.ok(
                 startDateService.getStartDate(userId, programId, profileId)));
     }
