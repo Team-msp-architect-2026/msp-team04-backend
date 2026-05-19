@@ -39,7 +39,8 @@ public class SecurityConfig {
                                 "/programs/**",
                                 "/map",
                                 "/api/benefits",
-                                "/api/batch/**"
+                                "/api/batch/**",
+                                "/api/health"          // ← 추가
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
