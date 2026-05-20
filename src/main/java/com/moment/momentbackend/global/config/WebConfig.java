@@ -1,11 +1,16 @@
 package com.moment.momentbackend.global.config;
 
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.moment.momentbackend.global.logging.RequestLoggingInterceptor;
 import io.netty.channel.ChannelOption;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -33,11 +38,14 @@ public class WebConfig implements WebMvcConfigurer {
 
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .defaultHeader("User-Agent", "Mozilla/5.0")
-                .defaultHeader("Connection", "close")
                 .codecs(configurer -> configurer
                         .defaultCodecs()
                         .maxInMemorySize(10 * 1024 * 1024))
+                .defaultHeader("User-Agent", "Mozilla/5.0")
                 .build();
+    }
+    @Bean
+    public XmlMapper xmlMapper() {
+        return new XmlMapper();
     }
 }
