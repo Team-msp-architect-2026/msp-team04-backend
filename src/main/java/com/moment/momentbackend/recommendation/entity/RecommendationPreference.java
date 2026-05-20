@@ -1,6 +1,9 @@
 package com.moment.momentbackend.recommendation.entity;
 
 import com.moment.momentbackend.recommendation.enums.*;
+import com.moment.momentbackend.recommendation.converter.MonthlyBudgetConverter;
+import com.moment.momentbackend.recommendation.converter.MoveTimeConverter;
+import com.moment.momentbackend.recommendation.converter.OnlinePreferenceConverter;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,7 +30,7 @@ public class RecommendationPreference {
     @Column
     private String region;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = MonthlyBudgetConverter.class)
     @Column
     private MonthlyBudget monthlyBudget;
 
@@ -35,11 +38,11 @@ public class RecommendationPreference {
     @Column
     private TransportType transportType;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = MoveTimeConverter.class)
     @Column
     private MoveTime moveTime;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = OnlinePreferenceConverter.class)
     @Column
     private OnlinePreference onlinePreference;
 

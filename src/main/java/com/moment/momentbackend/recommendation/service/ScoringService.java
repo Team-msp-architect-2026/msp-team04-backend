@@ -33,7 +33,7 @@ public class ScoringService {
         double scoreAge       = calcAgeScore(program, childAge);
         double scoreKeyword   = calcKeywordScore(program, concerns);
         double scoreClassType = calcClassTypeScore(program, preference);
-        double scoreRecruiting = program.getIsRecruiting() ? W_RECRUITING : 0.0;
+        double scoreRecruiting = Boolean.TRUE.equals(program.getIsRecruiting()) ? W_RECRUITING : 0.0;
         double scoreReview    = calcReviewScore(program);
 
         double total = scoreDistance + scoreBudget + scoreAge + scoreKeyword
@@ -62,9 +62,13 @@ public class ScoringService {
                 || userLat == 0.0 || userLon == 0.0) {
             return W_DISTANCE * 0.5;
         }
-        double dist = haversine(userLat, userLon,
+
+        double dist = haversine(
+                userLat,
+                userLon,
                 program.getLatitude().doubleValue(),
-                program.getLongitude().doubleValue());
+                program.getLongitude().doubleValue()
+        );
 
         if (dist <= 1.0)  return W_DISTANCE;
         if (dist <= 3.0)  return W_DISTANCE * 0.8;
@@ -74,14 +78,18 @@ public class ScoringService {
     }
 
     private double calcBudgetScore(Program program, RecommendationPreference preference) {
-        if (preference.getMonthlyBudget() == null) return W_BUDGET * 0.5;
+        if (preference.getMonthlyBudget() == null) {
+            return W_BUDGET * 0.5;
+        }
 
-        int price = program.getPrice();
+        int price = program.getPrice() != null ? program.getPrice() : 0;
+        boolean isFree = Boolean.TRUE.equals(program.getIsFree()) || price == 0;
+
         return switch (preference.getMonthlyBudget()) {
-            case UNDER_10 -> price <= 100000 ? W_BUDGET : W_BUDGET * 0.3;
-            case UNDER_30 -> price <= 300000 ? W_BUDGET : W_BUDGET * 0.3;
-            case UNDER_50 -> price <= 500000 ? W_BUDGET : W_BUDGET * 0.3;
-            case OVER_50  -> W_BUDGET;
+            case FREE -> isFree ? W_BUDGET : W_BUDGET * 0.2;
+            case ZERO_TO_TEN -> price <= 100000 ? W_BUDGET : W_BUDGET * 0.3;
+            case TEN_TO_TWENTY -> price <= 200000 ? W_BUDGET : W_BUDGET * 0.3;
+            case OVER_TWENTY, ANY -> W_BUDGET;
         };
     }
 
@@ -89,14 +97,21 @@ public class ScoringService {
         if (program.getTargetAgeMin() == null && program.getTargetAgeMax() == null) {
             return W_AGE * 0.5;
         }
+
         boolean minOk = program.getTargetAgeMin() == null || program.getTargetAgeMin() <= childAge;
         boolean maxOk = program.getTargetAgeMax() == null || program.getTargetAgeMax() >= childAge;
+
         return (minOk && maxOk) ? W_AGE : 0.0;
     }
 
     private double calcKeywordScore(Program program, List<String> concerns) {
-        if (concerns == null || concerns.isEmpty()) return 0.0;
-        if (program.getTags() == null || program.getTags().isEmpty()) return 0.0;
+        if (concerns == null || concerns.isEmpty()) {
+            return 0.0;
+        }
+
+        if (program.getTags() == null || program.getTags().isEmpty()) {
+            return 0.0;
+        }
 
         Set<String> tagSet = program.getTags().stream()
                 .map(t -> t.getTag().toLowerCase())
@@ -114,6 +129,7 @@ public class ScoringService {
         if (preference.getClassType() == null || program.getClassType() == null) {
             return W_CLASS_TYPE * 0.5;
         }
+
         return preference.getClassType().name().equals(program.getClassType())
                 ? W_CLASS_TYPE
                 : W_CLASS_TYPE * 0.2;
@@ -121,7 +137,9 @@ public class ScoringService {
 
     private double calcReviewScore(Program program) {
         double rating = program.getRatingAvg() != null
-                ? program.getRatingAvg().doubleValue() : 0.0;
+                ? program.getRatingAvg().doubleValue()
+                : 0.0;
+
         return (rating / 5.0) * W_REVIEW;
     }
 
@@ -130,24 +148,30 @@ public class ScoringService {
                                               double scoreClassType, double scoreRecruiting,
                                               double scoreReview) {
         List<ReasonCode> codes = new ArrayList<>();
-        if (scoreDistance >= W_DISTANCE * 0.6)  codes.add(ReasonCode.DISTANCE_CLOSE);
-        if (scoreBudget   >= W_BUDGET)           codes.add(ReasonCode.BUDGET_FIT);
-        if (scoreAge      >= W_AGE)              codes.add(ReasonCode.AGE_FIT);
-        if (scoreKeyword  > 0)                   codes.add(ReasonCode.KEYWORD_MATCH);
-        if (scoreClassType >= W_CLASS_TYPE)      codes.add(ReasonCode.CLASS_TYPE_MATCH);
-        if (scoreRecruiting > 0)                 codes.add(ReasonCode.RECRUITING_OPEN);
-        if (scoreReview   >= W_REVIEW * 0.7)     codes.add(ReasonCode.HIGH_RATING);
+
+        if (scoreDistance >= W_DISTANCE * 0.6) codes.add(ReasonCode.DISTANCE_CLOSE);
+        if (scoreBudget >= W_BUDGET) codes.add(ReasonCode.BUDGET_FIT);
+        if (scoreAge >= W_AGE) codes.add(ReasonCode.AGE_FIT);
+        if (scoreKeyword > 0) codes.add(ReasonCode.KEYWORD_MATCH);
+        if (scoreClassType >= W_CLASS_TYPE) codes.add(ReasonCode.CLASS_TYPE_MATCH);
+        if (scoreRecruiting > 0) codes.add(ReasonCode.RECRUITING_OPEN);
+        if (scoreReview >= W_REVIEW * 0.7) codes.add(ReasonCode.HIGH_RATING);
+
         return codes;
     }
 
     public double haversine(double lat1, double lon1, double lat2, double lon2) {
         final int R = 6371;
+
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
+
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
         return R * c;
     }
 
