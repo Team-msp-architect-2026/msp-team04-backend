@@ -1,6 +1,7 @@
 package com.moment.momentbackend.recommendation.controller;
 
 import com.moment.momentbackend.global.response.ApiResponse;
+import com.moment.momentbackend.recommendation.dto.NextRecommendExplainResponse;
 import com.moment.momentbackend.recommendation.dto.NextRecommendResponseDto;
 import com.moment.momentbackend.recommendation.service.NextRecommendService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,5 +26,16 @@ public class AiNextRecommendController {
             @RequestParam Long reservationId) {
         return ResponseEntity.ok(ApiResponse.ok(
                 nextRecommendService.getNextRecommend(userId, reservationId)));
+    }
+
+    @Operation(summary = "신청 완료 후 AI 다음 추천 설명 생성")
+    @PostMapping("/next/explain")
+    public ResponseEntity<ApiResponse<NextRecommendExplainResponse>> explainNextRecommend(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam Long applicationId) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                nextRecommendService.explainNextRecommend(userId, applicationId),
+                "AI 다음 추천 설명 생성 완료"
+        ));
     }
 }
