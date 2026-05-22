@@ -2,6 +2,7 @@ package com.moment.momentbackend.report.controller;
 
 import com.moment.momentbackend.global.response.ApiResponse;
 import com.moment.momentbackend.report.dto.ParentingRawReportResponseDto;
+import com.moment.momentbackend.report.dto.ParentingReportGenerateResponse;
 import com.moment.momentbackend.report.service.AiReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,5 +26,14 @@ public class ParentingReportController {
             @RequestParam Long profileId) {
         ParentingRawReportResponseDto response = aiReportService.getRawReport(userId, profileId);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @Operation(summary = "AI 육아 종합 분석 리포트 생성")
+    @PostMapping("/parenting/generate")
+    public ResponseEntity<ApiResponse<ParentingReportGenerateResponse>> generateParentingReport(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam Long profileId) {
+        ParentingReportGenerateResponse response = aiReportService.generateParentingReport(userId, profileId);
+        return ResponseEntity.ok(ApiResponse.ok(response, "AI 육아 종합 분석 리포트 생성 완료"));
     }
 }
