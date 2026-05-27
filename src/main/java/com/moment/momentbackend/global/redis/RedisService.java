@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -48,5 +49,18 @@ public class RedisService {
                 Collections.singletonList(key),
                 value
         );
+    }
+
+    public void setValue(String key, String value, long ttlSeconds) {
+        redisTemplate.opsForValue().set(
+                key,
+                value,
+                ttlSeconds,
+                TimeUnit.SECONDS
+        );
+    }
+
+    public Optional<String> getValue(String key) {
+        return Optional.ofNullable(redisTemplate.opsForValue().get(key));
     }
 }

@@ -25,33 +25,29 @@ public class RecommendProgressService {
 
     @Transactional(readOnly = true)
     public RecommendProgressResponseDto getProgress(Long userId, Long profileDraftId) {
-        // 본인 preference 확인
         RecommendationPreference preference = preferenceRepository
                 .findByIdAndUserId(profileDraftId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
 
-        // 자녀 프로필 존재 확인
         childProfileRepository.findByIdAndUserId(preference.getChildId(), userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CHILD_ACCESS_DENIED));
 
-        // 관심분야 조회
         boolean hasConcern = !childConcernRepository.findByChildProfileId(preference.getChildId()).isEmpty();
 
-        // 7단계 체크
         List<RecommendProgressStepDto> steps = new ArrayList<>();
         List<String> missing = new ArrayList<>();
 
         steps.add(buildStep("지역 선택", preference.getRegion() != null && !preference.getRegion().isBlank(),
                 preference.getRegion(), missing));
         steps.add(buildStep("예산 선택", preference.getMonthlyBudget() != null,
-                preference.getMonthlyBudget() != null ? preference.getMonthlyBudget().name() : null, missing));
+                preference.getMonthlyBudget() != null ? preference.getMonthlyBudget().getCode() : null, missing));
         steps.add(buildStep("이동거리 선택", preference.getMoveTime() != null,
-                preference.getMoveTime() != null ? preference.getMoveTime().name() : null, missing));
+                preference.getMoveTime() != null ? preference.getMoveTime().getCode() : null, missing));
         steps.add(buildStep("관심분야 선택", hasConcern, hasConcern ? "등록됨" : null, missing));
         steps.add(buildStep("수업방식 선택", preference.getClassType() != null,
                 preference.getClassType() != null ? preference.getClassType().name() : null, missing));
         steps.add(buildStep("온라인 여부", preference.getOnlinePreference() != null,
-                preference.getOnlinePreference() != null ? preference.getOnlinePreference().name() : null, missing));
+                preference.getOnlinePreference() != null ? preference.getOnlinePreference().getCode() : null, missing));
         steps.add(buildStep("신청 가능 여부", preference.getTransportType() != null,
                 preference.getTransportType() != null ? preference.getTransportType().name() : null, missing));
 
@@ -70,7 +66,10 @@ public class RecommendProgressService {
 
     private RecommendProgressStepDto buildStep(String name, boolean completed,
                                                String value, List<String> missing) {
-        if (!completed) missing.add(name);
+        if (!completed) {
+            missing.add(name);
+        }
+
         return RecommendProgressStepDto.builder()
                 .stepName(name)
                 .completed(completed)

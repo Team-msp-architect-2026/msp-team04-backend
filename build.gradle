@@ -47,6 +47,11 @@ dependencies {
     // WebClient (공공데이터 API 호출용)
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
+    // AWS SDK v2
+    implementation 'software.amazon.awssdk:sqs:2.25.0'
+    implementation 'software.amazon.awssdk:s3:2.25.0'
+    implementation 'software.amazon.awssdk:secretsmanager:2.25.0'
+
     constraints {
         implementation('org.apache.commons:commons-compress:1.26.0') {
             because 'CVE-2024-25710, CVE-2024-26308 보안 취약점 대응'

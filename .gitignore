@@ -52,4 +52,8 @@ out/
 k8s/secret.yaml.env
 k8s/secret.yaml
 
+
 **/application-local.properties
+
+application-local.properties
+

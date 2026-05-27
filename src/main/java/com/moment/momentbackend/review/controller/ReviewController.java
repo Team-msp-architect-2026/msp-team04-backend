@@ -2,7 +2,9 @@ package com.moment.momentbackend.review.controller;
 
 import com.moment.momentbackend.global.response.ApiResponse;
 import com.moment.momentbackend.review.dto.ReviewListResponse;
+import com.moment.momentbackend.review.dto.ReviewKeywordResponse;
 import com.moment.momentbackend.review.service.ReviewService;
+import com.moment.momentbackend.review.service.ReviewKeywordService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import java.util.List;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final ReviewKeywordService reviewKeywordService;
 
     @GetMapping("/{programId}/reviews")
     @Operation(summary = "프로그램 후기 목록 조회")
@@ -24,5 +27,13 @@ public class ReviewController {
             @PathVariable Long programId
     ) {
         return ApiResponse.ok(reviewService.getReviewList(programId));
+    }
+
+    @GetMapping("/{programId}/reviews/ai-keywords")
+    @Operation(summary = "AI 후기 키워드 분석 조회")
+    public ApiResponse<ReviewKeywordResponse> getReviewKeywords(
+            @PathVariable Long programId
+    ) {
+        return ApiResponse.ok(reviewKeywordService.generate(programId));
     }
 }
