@@ -67,10 +67,10 @@ class RecommendationIntegrationTest {
         PreferenceRequestDto request = mock(PreferenceRequestDto.class);
         when(request.getChildId()).thenReturn(1L);
         when(request.getRegion()).thenReturn("서울");
-        when(request.getMonthlyBudget()).thenReturn(MonthlyBudget.UNDER_10);
+        when(request.getMonthlyBudget()).thenReturn(MonthlyBudget.ZERO_TO_TEN);
         when(request.getTransportType()).thenReturn(TransportType.WALK);
-        when(request.getMoveTime()).thenReturn(MoveTime.UNDER_15);
-        when(request.getOnlinePreference()).thenReturn(OnlinePreference.BOTH);
+        when(request.getMoveTime()).thenReturn(MoveTime.UNDER_TEN);
+        when(request.getOnlinePreference()).thenReturn(OnlinePreference.ANY);
         when(request.getClassType()).thenReturn(ClassType.INDIVIDUAL);
 
         when(childProfileRepository.findByIdAndUserId(1L, userId)).thenReturn(Optional.of(child));

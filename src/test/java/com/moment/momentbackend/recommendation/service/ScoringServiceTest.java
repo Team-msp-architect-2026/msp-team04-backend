@@ -87,7 +87,7 @@ class ScoringServiceTest {
     @DisplayName("UNDER_10 예산, price=100000 → 만점")
     void budget_under10_exactBoundary_fullScore() {
         when(program.getPrice()).thenReturn(100000);
-        when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.UNDER_10);
+        when(preference.getMonthlyBudget()).thenReturn( MonthlyBudget.ZERO_TO_TEN);
 
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 5, 0.0, 0.0, List.of());
@@ -99,7 +99,7 @@ class ScoringServiceTest {
     @DisplayName("UNDER_10 예산, price=100001 → 30%")
     void budget_under10_overBoundary_30percent() {
         when(program.getPrice()).thenReturn(100001);
-        when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.UNDER_10);
+        when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.ZERO_TO_TEN);
 
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 5, 0.0, 0.0, List.of());
@@ -111,7 +111,7 @@ class ScoringServiceTest {
     @DisplayName("OVER_50 예산 → 항상 만점")
     void budget_over50_alwaysFullScore() {
         when(program.getPrice()).thenReturn(9999999);
-        when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.OVER_50);
+        when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.OVER_TWENTY);
 
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 5, 0.0, 0.0, List.of());
@@ -219,7 +219,7 @@ class ScoringServiceTest {
         when(program.getClassType()).thenReturn("INDIVIDUAL");
         when(program.getIsRecruiting()).thenReturn(true);
         when(program.getRatingAvg()).thenReturn(new BigDecimal("5.00"));
-        when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.OVER_50);
+        when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.OVER_TWENTY);
         when(preference.getClassType()).thenReturn(ClassType.INDIVIDUAL);
 
         ScoreBreakdownDto score = scoringService.calculate(
@@ -234,7 +234,7 @@ class ScoringServiceTest {
         when(program.getTargetAgeMin()).thenReturn(1);
         when(program.getTargetAgeMax()).thenReturn(13);
         when(program.getPrice()).thenReturn(0);
-        when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.OVER_50);
+        when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.OVER_TWENTY);
         when(program.getIsRecruiting()).thenReturn(true);
 
         ScoreBreakdownDto score = scoringService.calculate(
