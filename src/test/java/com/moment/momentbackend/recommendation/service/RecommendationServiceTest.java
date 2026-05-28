@@ -61,11 +61,11 @@ class RecommendationServiceTest {
         RecommendationPreference saved = RecommendationPreference.builder()
                 .userId(userId)
                 .childId(2L)
-                .monthlyBudget(MonthlyBudget.UNDER_30)
+                .monthlyBudget(MonthlyBudget.ZERO_TO_TEN)
                 .transportType(TransportType.PUBLIC)
-                .moveTime(MoveTime.UNDER_30)
-                .onlinePreference(OnlinePreference.BOTH)
-                .classType(ClassType.GROUP)
+                .moveTime(MoveTime.UNDER_TEN)
+                .onlinePreference(OnlinePreference.ANY)
+                .classType(ClassType.SMALL)
                 .createdAt(LocalDateTime.now())
                 .build();
         setField(saved, "id", 10L);
@@ -106,11 +106,11 @@ class RecommendationServiceTest {
         RecommendationPreference preference = RecommendationPreference.builder()
                 .userId(userId)
                 .childId(2L)
-                .monthlyBudget(MonthlyBudget.UNDER_30)
+                .monthlyBudget(MonthlyBudget.ZERO_TO_TEN)
                 .transportType(TransportType.PUBLIC)
-                .moveTime(MoveTime.UNDER_30)
-                .onlinePreference(OnlinePreference.BOTH)
-                .classType(ClassType.GROUP)
+                .moveTime(MoveTime.UNDER_TEN)
+                .onlinePreference(OnlinePreference.ANY)
+                .classType(ClassType.SMALL)
                 .createdAt(LocalDateTime.now())
                 .build();
         setField(preference, "id", preferenceId);
@@ -123,7 +123,7 @@ class RecommendationServiceTest {
 
         // then
         assertThat(result.getId()).isEqualTo(preferenceId);
-        assertThat(result.getMonthlyBudget()).isEqualTo(MonthlyBudget.UNDER_30);
+        assertThat(result.getMonthlyBudget()).isEqualTo(MonthlyBudget.ZERO_TO_TEN);
     }
 
     @Test
@@ -143,11 +143,11 @@ class RecommendationServiceTest {
     private PreferenceRequestDto mockRequest(Long childId) {
         PreferenceRequestDto dto = new PreferenceRequestDto();
         setField(dto, "childId", childId);
-        setField(dto, "monthlyBudget", MonthlyBudget.UNDER_30);
+        setField(dto, "monthlyBudget", MonthlyBudget.ZERO_TO_TEN);
         setField(dto, "transportType", TransportType.PUBLIC);
-        setField(dto, "moveTime", MoveTime.UNDER_30);
-        setField(dto, "onlinePreference", OnlinePreference.BOTH);
-        setField(dto, "classType", ClassType.GROUP);
+        setField(dto, "moveTime", MoveTime.UNDER_TEN);
+        setField(dto, "onlinePreference", OnlinePreference.ANY);
+        setField(dto, "classType", ClassType.SMALL);
         return dto;
     }
 

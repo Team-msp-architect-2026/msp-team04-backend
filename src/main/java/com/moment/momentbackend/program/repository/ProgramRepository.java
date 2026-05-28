@@ -1,5 +1,6 @@
 package com.moment.momentbackend.program.repository;
 
+import com.moment.momentbackend.program.entity.Institution;
 import com.moment.momentbackend.program.entity.Program;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,4 +30,7 @@ public interface ProgramRepository extends JpaRepository<Program, Long> {
 
     @Query("SELECT p FROM Program p WHERE p.isRecruiting = true AND p.isPublic = true AND p.category != :category ORDER BY p.ratingAvg DESC")
     List<Program> findOtherRecruitingPrograms(@Param("category") String category);
+
+    Optional<Program> findByExternalSourceAndExternalId(
+            String externalSource, String externalId);
 }

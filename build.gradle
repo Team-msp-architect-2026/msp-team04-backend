@@ -41,6 +41,11 @@ dependencies {
     // OpenSearch
     implementation 'org.opensearch.client:opensearch-rest-client:2.13.0'
     implementation 'org.opensearch.client:opensearch-java:2.13.0'
+    // XML 파싱 (복지로 API용)
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+
+    // WebClient (공공데이터 API 호출용)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // AWS SDK v2
     implementation 'software.amazon.awssdk:sqs:2.25.0'
@@ -85,4 +90,5 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    jvmArgs += ['-Djdk.attach.allowAttachSelf=true']
 }

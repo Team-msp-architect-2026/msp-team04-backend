@@ -47,10 +47,10 @@ class RecommendProgressServiceTest {
         RecommendationPreference preference = RecommendationPreference.builder()
                 .userId(userId).childId(childId)
                 .region("서울")
-                .monthlyBudget(MonthlyBudget.UNDER_30)
-                .moveTime(MoveTime.UNDER_30)
-                .classType(ClassType.GROUP)
-                .onlinePreference(OnlinePreference.BOTH)
+                .monthlyBudget(MonthlyBudget.ZERO_TO_TEN)
+                .moveTime(MoveTime.UNDER_TEN)
+                .classType(ClassType.SMALL)
+                .onlinePreference(OnlinePreference.ANY)
                 .transportType(TransportType.PUBLIC)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -101,9 +101,9 @@ class RecommendProgressServiceTest {
         RecommendationPreference preference = RecommendationPreference.builder()
                 .userId(userId).childId(childId)
                 .region("서울")
-                .monthlyBudget(MonthlyBudget.UNDER_30)
-                .moveTime(MoveTime.UNDER_30)
-                .classType(ClassType.GROUP)
+                .monthlyBudget(MonthlyBudget.ZERO_TO_TEN)
+                .moveTime(MoveTime.UNDER_TEN)
+                .classType(ClassType.SMALL)
                 .createdAt(LocalDateTime.now())
                 .build();
 
