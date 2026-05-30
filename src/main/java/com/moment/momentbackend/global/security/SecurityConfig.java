@@ -37,6 +37,8 @@ public class SecurityConfig {
                                 "/auth/refresh",
                                 "/programs",
                                 "/programs/**",
+                                "/api/programs",
+                                "/api/programs/**",
                                 "/map",
                                 "/api/benefits",
                                 "/api/batch/**",
