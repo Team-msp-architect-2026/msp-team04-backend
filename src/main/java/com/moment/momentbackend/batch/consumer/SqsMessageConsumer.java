@@ -48,7 +48,7 @@ public class SqsMessageConsumer {
     private String queueUrl;
 
     // 10초마다 폴링
-    @Scheduled(fixedDelay = 10000)
+    //@Scheduled(fixedDelay = 10000)
     public void poll() {
         ReceiveMessageRequest request = ReceiveMessageRequest.builder()
                 .queueUrl(queueUrl)
