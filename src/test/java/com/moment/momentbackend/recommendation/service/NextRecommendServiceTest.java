@@ -158,7 +158,7 @@ class NextRecommendServiceTest {
 
         assertThatThrownBy(() -> nextRecommendService.getNextRecommend(1L, 1L))
                 .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.APPLICATION_NOT_FOUND);
     }
 
     @Test
