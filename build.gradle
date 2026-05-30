@@ -91,4 +91,12 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
     jvmArgs += ['-Djdk.attach.allowAttachSelf=true']
+
+    // CI 환경에서 외부 인프라 의존 테스트 제외
+    if (System.getenv('CI') == 'true') {
+        exclude '**/MomentBackendApplicationTests*'
+        exclude '**/publicdata/**'
+        exclude '**/RecommendationIntegrationTest*'
+        exclude '**/TestMomentBackendApplication*'
+    }
 }
