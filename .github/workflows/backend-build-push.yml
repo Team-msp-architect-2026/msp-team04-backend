@@ -101,3 +101,19 @@ jobs:
           echo "|---------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| backend-api | ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BACKEND }}:dev-${{ steps.tag.outputs.SHORT_SHA }} | ${{ steps.push-backend.outputs.digest }} |" >> $GITHUB_STEP_SUMMARY
           echo "| batch-job | ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BATCH }}:dev-${{ steps.tag.outputs.SHORT_SHA }} | ${{ steps.push-batch.outputs.digest }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Save image info as artifact
+        run: |
+          mkdir -p /tmp/image-info
+          echo "BACKEND_IMAGE_URI=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BACKEND }}:dev-${{ steps.tag.outputs.SHORT_SHA }}" >> /tmp/image-info/image-info.env
+          echo "BATCH_JOB_IMAGE_URI=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BATCH }}:dev-${{ steps.tag.outputs.SHORT_SHA }}" >> /tmp/image-info/image-info.env
+          echo "IMAGE_TAG=dev-${{ steps.tag.outputs.SHORT_SHA }}" >> /tmp/image-info/image-info.env
+          echo "BACKEND_DIGEST=${{ steps.push-backend.outputs.digest }}" >> /tmp/image-info/image-info.env
+          echo "BATCH_DIGEST=${{ steps.push-batch.outputs.digest }}" >> /tmp/image-info/image-info.env
+
+      - name: Upload image info artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-image-info
+          path: /tmp/image-info/image-info.env
+          retention-days: 7
