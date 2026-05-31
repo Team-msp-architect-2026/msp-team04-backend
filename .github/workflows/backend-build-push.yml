@@ -4,14 +4,21 @@ on:
   push:
     branches:
       - develop
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+  ECR_REPOSITORY_BACKEND: moment-dev-backend-api
+  ECR_REPOSITORY_BATCH: moment-dev-batch-job
 
 jobs:
   build-and-push:
-    name: Build & Push to ECR
+    name: Backend & Batch – Docker Build & ECR Push
     runs-on: ubuntu-latest
 
     steps:
@@ -37,30 +44,63 @@ jobs:
       - name: Build bootJar
         run: ./gradlew clean bootJar -x test --no-daemon
 
-      - name: Build Docker image
-        run: docker build -t moment-backend:${{ github.sha }} .
-
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Tag and push Docker image to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      - name: Set image tag
+        id: tag
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Build Backend API Docker image
         run: |
-          IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY
+          docker build \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --label "service=backend-api" \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BACKEND }}:dev-${{ steps.tag.outputs.SHORT_SHA }} \
+            .
 
-          docker tag moment-backend:${{ github.sha }} $IMAGE_URI:${{ github.sha }}
-          docker push $IMAGE_URI:${{ github.sha }}
+      - name: Push Backend API image to ECR
+        id: push-backend
+        run: |
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BACKEND }}:dev-${{ steps.tag.outputs.SHORT_SHA }}
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BACKEND }}:dev-${{ steps.tag.outputs.SHORT_SHA }})
+          echo "BACKEND_IMAGE_URI=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BACKEND }}:dev-${{ steps.tag.outputs.SHORT_SHA }}" >> $GITHUB_OUTPUT
+          echo "BACKEND_DIGEST=$DIGEST" >> $GITHUB_OUTPUT
 
-          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            docker tag moment-backend:${{ github.sha }} $IMAGE_URI:latest
-            docker push $IMAGE_URI:latest
-          fi
+      - name: Build Batch Job Docker image
+        run: |
+          docker build \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --label "service=batch-job" \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BATCH }}:dev-${{ steps.tag.outputs.SHORT_SHA }} \
+            .
+
+      - name: Push Batch Job image to ECR
+        id: push-batch
+        run: |
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BATCH }}:dev-${{ steps.tag.outputs.SHORT_SHA }}
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BATCH }}:dev-${{ steps.tag.outputs.SHORT_SHA }})
+          echo "BATCH_IMAGE_URI=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_BATCH }}:dev-${{ steps.tag.outputs.SHORT_SHA }}" >> $GITHUB_OUTPUT
+          echo "BATCH_DIGEST=$DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Print image summary
+        run: |
+          echo "## Docker Build & ECR Push 결과" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Image URI | Digest |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| backend-api | ${{ steps.push-backend.outputs.BACKEND_IMAGE_URI }} | ${{ steps.push-backend.outputs.BACKEND_DIGEST }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| batch-job | ${{ steps.push-batch.outputs.BATCH_IMAGE_URI }} | ${{ steps.push-batch.outputs.BATCH_DIGEST }} |" >> $GITHUB_STEP_SUMMARY
