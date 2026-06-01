@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +34,10 @@ public interface ProgramRepository extends JpaRepository<Program, Long> {
 
     Optional<Program> findByExternalSourceAndExternalId(
             String externalSource, String externalId);
+
+    @Query("SELECT p FROM Program p WHERE p.isPublic = true AND p.isRecruiting = true AND p.deadlineDate = :deadlineDate")
+    List<Program> findRecruitingProgramsByDeadlineDate(@Param("deadlineDate") LocalDate deadlineDate);
+
+    @Query("SELECT p FROM Program p WHERE p.isPublic = true AND p.isRecruiting = true")
+    List<Program> findRecruitingProgramsForNotification();
 }

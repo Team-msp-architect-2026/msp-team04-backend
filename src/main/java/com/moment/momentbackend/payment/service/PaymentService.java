@@ -5,6 +5,7 @@ import com.moment.momentbackend.application.repository.ApplicationRepository;
 import com.moment.momentbackend.application.type.ApplicationStatus;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.notification.service.NotificationService;
 import com.moment.momentbackend.payment.client.TossPaymentClient;
 import com.moment.momentbackend.payment.dto.*;
 import com.moment.momentbackend.payment.entity.Payment;
@@ -27,6 +28,7 @@ public class PaymentService {
     private final ApplicationRepository applicationRepository;
     private final ProgramRepository programRepository;
     private final TossPaymentClient tossPaymentClient;
+    private final NotificationService notificationService;
 
     @Value("${toss.client-key:}")
     private String tossClientKey;
@@ -81,6 +83,10 @@ public class PaymentService {
 
         Payment savedPayment = paymentRepository.save(payment);
 
+        if (savedPayment.isApproved()) {
+            notificationService.createPaymentDoneNotification(userId, savedPayment.getId(), program.getTitle());
+        }
+
         return PaymentPrepareResponse.of(
                 savedPayment,
                 application,
@@ -119,6 +125,10 @@ public class PaymentService {
 
         payment.approve(tossResponse.getPaymentKey());
         application.changeStatus(ApplicationStatus.CONFIRMED);
+
+        Program program = programRepository.findById(application.getProgramId())
+                .orElseThrow(() -> new CustomException(ErrorCode.PROGRAM_NOT_FOUND));
+        notificationService.createPaymentDoneNotification(userId, payment.getId(), program.getTitle());
 
         return PaymentResultResponse.of(payment, application);
     }
