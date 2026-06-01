@@ -13,6 +13,7 @@ public enum ErrorCode {
     INVALID_AGREEMENT(HttpStatus.BAD_REQUEST, "필수 약관 동의가 필요합니다"),
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액이 일치하지 않습니다"),
     INVALID_ENUM_VALUE(HttpStatus.BAD_REQUEST, "허용되지 않는 값입니다"),
+    INVALID_UPLOAD_CONTENT_TYPE(HttpStatus.BAD_REQUEST, "허용되지 않는 이미지 타입입니다"),
 
     // 401
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증 토큰 없음 또는 만료"),
@@ -45,6 +46,8 @@ public enum ErrorCode {
 
     // 500
     PAYMENT_CONFIRM_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "토스페이먼츠 결제 승인 처리에 실패했습니다"),
+    UPLOAD_STORAGE_CONFIG_MISSING(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드 저장소 설정이 누락되었습니다"),
+    UPLOAD_PRESIGN_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드 URL 발급에 실패했습니다"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류");
 
     private final HttpStatus status;
