@@ -12,5 +12,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
     List<Bookmark> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    List<Bookmark> findByProgramId(Long programId);
+
     boolean existsByUserIdAndProgramId(Long userId, Long programId);
 }
