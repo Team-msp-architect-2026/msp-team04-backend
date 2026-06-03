@@ -15,6 +15,7 @@ import com.moment.momentbackend.user.entity.User;
 import com.moment.momentbackend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
+@Profile("!batch")
 @Service
 @RequiredArgsConstructor
 public class AuthService {

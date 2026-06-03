@@ -18,13 +18,14 @@ public class InstitutionItemWriter implements ItemWriter<InstitutionCsvDto> {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public void write(Chunk<? extends InstitutionCsvDto> chunk) {
+    public void write(Chunk<? extends InstitutionCsvDto> chunk) throws Exception {
         for (InstitutionCsvDto dto : chunk.getItems()) {
             try {
                 upsert(dto);
             } catch (Exception e) {
-                log.error("기관 upsert 실패 - externalSource: {}, externalId: {}, 오류: {}",
-                        dto.getExternalSource(), dto.getExternalId(), e.getMessage());
+                log.error("기관 upsert 실패 - externalSource: {}, externalId: {}",
+                        dto.getExternalSource(), dto.getExternalId(), e);
+                throw e;
             }
         }
     }
@@ -32,25 +33,35 @@ public class InstitutionItemWriter implements ItemWriter<InstitutionCsvDto> {
     private void upsert(InstitutionCsvDto dto) {
         String sql = """
                 INSERT INTO institution (
-                    institution_name, address, region, phone, website,
-                    institution_type, external_source, external_id, last_synced_at, created_at
+                    institution_name, address, phone, homepage_url,
+                    institution_type, external_source, external_id,
+                    last_synced_at, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (external_source, external_id) DO UPDATE SET
                     institution_name = EXCLUDED.institution_name,
                     address = EXCLUDED.address,
-                    region = EXCLUDED.region,
                     phone = EXCLUDED.phone,
-                    website = EXCLUDED.website,
+                    homepage_url = EXCLUDED.homepage_url,
                     institution_type = EXCLUDED.institution_type,
-                    last_synced_at = EXCLUDED.last_synced_at
+                    last_synced_at = EXCLUDED.last_synced_at,
+                    updated_at = EXCLUDED.updated_at
                 """;
 
+        LocalDateTime now = LocalDateTime.now();
+
         jdbcTemplate.update(sql,
-                dto.getInstitutionName(), dto.getAddress(), dto.getRegion(),
-                dto.getPhone(), dto.getWebsite(), dto.getInstitutionType(),
-                dto.getExternalSource(), dto.getExternalId(),
-                LocalDateTime.now(), LocalDateTime.now()
+                dto.getInstitutionName(),
+                dto.getAddress(),
+                dto.getPhone(),
+                dto.getWebsite(),
+                dto.getInstitutionType(),
+                dto.getExternalSource(),
+                dto.getExternalId(),
+                now,
+                now,
+                now
         );
+
         log.info("기관 upsert 완료: {}", dto.getExternalId());
     }
 }
