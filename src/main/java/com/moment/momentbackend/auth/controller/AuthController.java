@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 import com.moment.momentbackend.auth.jwt.JwtTokenProvider;
 import java.io.IOException;
+import org.springframework.context.annotation.Profile;
 
 @Tag(name = "Auth", description = "인증 관련 API")
+@Profile("!batch")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
