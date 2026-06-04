@@ -34,8 +34,12 @@ public class SeoulAcademyParser {
                 String dsgNo = row.path("PEI_DSGN_NO").asText(null);
                 if (dsgNo == null) continue;
 
+                String academyName = row.path("PEI_NM").asText("미상");
+                String courseName = row.path("TRNG_CRS_NM").asText(null);
+                String programTitle = buildProgramTitle(academyName, courseName);
+
                 Institution institution = Institution.builder()
-                        .institutionName(row.path("PEI_NM").asText("미상"))
+                        .institutionName(academyName)
                         .institutionType("PRIVATE")
                         .address(row.path("ROAD_NM_ADDR").asText(null))
                         .externalSource(EXTERNAL_SOURCE)
@@ -49,11 +53,12 @@ public class SeoulAcademyParser {
                 int price = parsePrice(priceRaw);
 
                 Program program = Program.builder()
-                        .title(row.path("TRNG_CRS_NM").asText("과정명없음"))
+                        .title(programTitle)
                         .category("EDUCATION")
                         .programType(null)
                         .region(row.path("ADMDST_NM").asText(null))
                         .detailAddress(row.path("DADDR").asText(null))
+                        .curriculum(courseName)
                         .price(price)
                         .isFree(price == 0)
                         .maxCapacity(parseIntOrNull(row.path("PSCP_SUM").asText(null)))
@@ -74,6 +79,14 @@ public class SeoulAcademyParser {
         }
         log.info("seoul_academy 파싱 완료: program {}건", programs.size());
         return new ParseResult(institutions, programs);
+    }
+
+
+    private String buildProgramTitle(String academyName, String courseName) {
+        if (courseName == null || courseName.isBlank()) {
+            return academyName;
+        }
+        return academyName + " - " + courseName;
     }
 
     private int parsePrice(String raw) {

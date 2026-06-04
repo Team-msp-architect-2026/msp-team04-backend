@@ -90,11 +90,13 @@ public class SqsMessageConsumer {
                         seoulProgramParser.parse(root, msg.getSourceDetail());
                 upsertInstitutions(result.institutions());
                 upsertPrograms(result.programs());
+                backfillProgramInstitutionLinks("SEOUL_PUBLIC_PROGRAM");
             }
             case "seoul_academy" -> {
                 SeoulAcademyParser.ParseResult result = seoulAcademyParser.parse(root);
                 upsertInstitutions(result.institutions());
                 upsertPrograms(result.programs());
+                backfillProgramInstitutionLinks("SEOUL_ACADEMY");
             }
             case "government_benefit" -> {
                 List<BenefitMaster> benefits = governmentBenefitParser.parse(root);
@@ -105,6 +107,7 @@ public class SqsMessageConsumer {
                         seoulCareParser.parse(root, msg.getSourceDetail());
                 upsertInstitutions(result.institutions());
                 upsertPrograms(result.programs());
+                backfillProgramInstitutionLinks("SEOUL_CARE");
             }
             default -> log.warn("알 수 없는 sourceName: {}", msg.getSourceName());
         }
@@ -133,6 +136,12 @@ public class SqsMessageConsumer {
             }
         }
         log.info("program upsert 완료: {}건", list.size());
+    }
+
+
+    private void backfillProgramInstitutionLinks(String externalSource) {
+        int updatedCount = programRepository.backfillInstitutionLinksByExternalSource(externalSource);
+        log.info("program institution_id backfill 완료 - externalSource: {}, updated: {}", externalSource, updatedCount);
     }
 
     private void upsertBenefits(List<BenefitMaster> list) {
