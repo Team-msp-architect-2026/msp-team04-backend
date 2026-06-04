@@ -16,6 +16,7 @@ import com.moment.momentbackend.program.repository.ProgramRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -27,6 +28,7 @@ import java.util.Optional;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(prefix = "batch.sqs.consumer", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class SqsMessageConsumer {
 
@@ -48,7 +50,7 @@ public class SqsMessageConsumer {
     private String queueUrl;
 
     // 10초마다 폴링
-    //@Scheduled(fixedDelay = 10000)
+    @Scheduled(fixedDelay = 10000)
     public void poll() {
         ReceiveMessageRequest request = ReceiveMessageRequest.builder()
                 .queueUrl(queueUrl)
