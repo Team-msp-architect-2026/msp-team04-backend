@@ -19,10 +19,13 @@ public class OpenSearchConfig {
     @Value("${opensearch.port:9200}")
     private int port;
 
+    @Value("${opensearch.scheme:http}")
+    private String scheme;
+
     @Bean
     public OpenSearchClient openSearchClient() {
         RestClient restClient = RestClient.builder(
-                new HttpHost(host, port, "http")
+                new HttpHost(host, port, scheme)
         ).build();
 
         RestClientTransport transport = new RestClientTransport(
