@@ -21,6 +21,7 @@ public class ProgramListResponseDto {
     private String deadlineDate;
     private Double ratingAvg;
     private Integer reviewCount;
+    private String description;
 
     public ProgramListResponseDto(Program program) {
         this.id = program.getId();
@@ -40,5 +41,6 @@ public class ProgramListResponseDto {
         this.ratingAvg = program.getRatingAvg() != null
                 ? program.getRatingAvg().doubleValue() : 0.0;
         this.reviewCount = program.getReviewCount();
+        this.description = program.getDescription();
     }
 }
