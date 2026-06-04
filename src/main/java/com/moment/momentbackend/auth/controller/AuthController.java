@@ -17,7 +17,12 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 import com.moment.momentbackend.auth.jwt.JwtTokenProvider;
 import java.io.IOException;
+
 import org.springframework.context.annotation.Profile;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 
 @Tag(name = "Auth", description = "인증 관련 API")
 @Profile("!batch")
@@ -43,13 +48,22 @@ public class AuthController {
     @GetMapping("/kakao")
     public void kakaoLoginRedirect(
             @RequestParam("code") String code,
+            @RequestParam(value = "state", required = false) String state,
             HttpServletResponse response) throws IOException {
+
         KakaoLoginRequestDto request = new KakaoLoginRequestDto(code);
         KakaoLoginResponseDto tokens = authService.kakaoLogin(request);
 
-        String redirectUrl = "momentapp://auth"
-                + "?accessToken=" + tokens.getAccessToken()
-                + "&refreshToken=" + tokens.getRefreshToken();
+        String appRedirectUri = (state != null && !state.isBlank())
+                ? state
+                : "momentapp://auth";
+
+        String separator = appRedirectUri.contains("?") ? "&" : "?";
+
+        String redirectUrl = appRedirectUri
+                + separator
+                + "accessToken=" + URLEncoder.encode(tokens.getAccessToken(), StandardCharsets.UTF_8)
+                + "&refreshToken=" + URLEncoder.encode(tokens.getRefreshToken(), StandardCharsets.UTF_8);
 
         response.sendRedirect(redirectUrl);
     }

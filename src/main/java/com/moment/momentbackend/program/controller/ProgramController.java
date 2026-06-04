@@ -15,6 +15,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.moment.momentbackend.program.dto.MapPinResponseDto;
+import com.moment.momentbackend.program.dto.HomeProgramsResponseDto;
 import java.util.List;
 
 @Tag(name = "Program", description = "프로그램 API")
@@ -39,6 +40,20 @@ public class ProgramController {
             Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.ok(
                 programService.getPrograms(status, category, region, pageable)));
+    }
+
+    @Operation(summary = "홈 화면 프로그램 조회",
+            description = "홈 화면용 무료·공공, 마감 임박, 온라인 프로그램 조회")
+    @GetMapping("/home")
+    public ResponseEntity<ApiResponse<HomeProgramsResponseDto>> getHomePrograms(
+            @Parameter(description = "지역")
+            @RequestParam(required = false) String region,
+            @Parameter(description = "카테고리")
+            @RequestParam(required = false) String category) {
+
+        return ResponseEntity.ok(ApiResponse.ok(
+                programService.getHomePrograms(region, category)
+        ));
     }
 
     @Operation(summary = "프로그램 상세 조회")
