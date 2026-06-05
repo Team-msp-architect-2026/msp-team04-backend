@@ -26,6 +26,7 @@ public class ProgramController {
 
     private final ProgramService programService;
 
+    // CI/CD demo no-op change: verifies build, image push, GitOps update, and ArgoCD rollout.
     @Operation(summary = "프로그램 목록 조회",
             description = "status(RECRUITING/CLOSED), category, region 필터 및 페이지네이션 지원")
     @GetMapping
