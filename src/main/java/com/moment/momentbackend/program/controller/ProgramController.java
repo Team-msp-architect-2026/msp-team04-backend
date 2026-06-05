@@ -36,10 +36,12 @@ public class ProgramController {
             @RequestParam(required = false) String category,
             @Parameter(description = "지역")
             @RequestParam(required = false) String region,
+            @Parameter(description = "화면 필터 (ALL/URGENT/FREE/ONLINE/PUBLIC_SUPPORT)")
+            @RequestParam(required = false) String filter,
             @PageableDefault(size = 10, sort = "deadlineDate", direction = Sort.Direction.ASC)
             Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.ok(
-                programService.getPrograms(status, category, region, pageable)));
+                programService.getPrograms(status, category, region, filter, pageable)));
     }
 
     @Operation(summary = "홈 화면 프로그램 조회",
