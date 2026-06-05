@@ -16,8 +16,10 @@ public class MomentBackendApplication {
 
         boolean batchProfileActive = Arrays.asList(context.getEnvironment().getActiveProfiles())
                 .contains("batch");
+        boolean sqsConsumerEnabled = context.getEnvironment()
+                .getProperty("batch.sqs.consumer.enabled", Boolean.class, false);
 
-        if (batchProfileActive) {
+        if (batchProfileActive && !sqsConsumerEnabled) {
             int exitCode = SpringApplication.exit(context);
             System.exit(exitCode);
         }
