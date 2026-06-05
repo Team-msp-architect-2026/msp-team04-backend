@@ -129,7 +129,7 @@ jobs:
               workflow_id: 'update-helm-values.yml',
               ref: 'develop',
               inputs: {
-                service: 'all',
+                service: 'backend-batch',
                 image_tag: 'dev-${{ steps.tag.outputs.SHORT_SHA }}',
                 environment: 'dev',
                 dry_run: 'false'
