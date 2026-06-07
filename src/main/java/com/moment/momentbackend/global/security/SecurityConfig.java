@@ -45,7 +45,9 @@ public class SecurityConfig {
                                 "/api/benefits",
                                 "/api/batch/**",
                                 "/health",
-                                "/api/health"
+                                "/api/health",
+                                "/actuator/health",
+                                "/actuator/prometheus"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
