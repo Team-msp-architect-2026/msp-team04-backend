@@ -216,11 +216,11 @@ class ScoringServiceTest {
         when(program.getPrice()).thenReturn(0);
         when(program.getTargetAgeMin()).thenReturn(1);
         when(program.getTargetAgeMax()).thenReturn(13);
-        when(program.getClassType()).thenReturn("INDIVIDUAL");
+        when(program.getClassType()).thenReturn("ONE_ON_ONE");
         when(program.getIsRecruiting()).thenReturn(true);
         when(program.getRatingAvg()).thenReturn(new BigDecimal("5.00"));
         when(preference.getMonthlyBudget()).thenReturn(MonthlyBudget.OVER_TWENTY);
-        when(preference.getClassType()).thenReturn(ClassType.INDIVIDUAL);
+        when(preference.getClassType()).thenReturn(ClassType.ONE_ON_ONE);
 
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 7, 37.5670, 126.9784, List.of("수영"));
