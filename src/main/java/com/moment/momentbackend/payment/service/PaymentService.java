@@ -5,6 +5,7 @@ import com.moment.momentbackend.application.repository.ApplicationRepository;
 import com.moment.momentbackend.application.type.ApplicationStatus;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.notification.service.NotificationService;
 import com.moment.momentbackend.payment.client.TossPaymentClient;
 import com.moment.momentbackend.payment.dto.*;
@@ -29,6 +30,7 @@ public class PaymentService {
     private final ProgramRepository programRepository;
     private final TossPaymentClient tossPaymentClient;
     private final NotificationService notificationService;
+    private final BusinessMetricsService businessMetricsService;
 
     @Value("${toss.client-key:}")
     private String tossClientKey;
@@ -41,6 +43,18 @@ public class PaymentService {
 
     @Transactional
     public PaymentPrepareResponse prepareTossPayment(Long userId, PaymentPrepareRequest request) {
+        try {
+            return prepareTossPaymentInternal(userId, request);
+        } catch (CustomException e) {
+            businessMetricsService.recordPaymentFailed("prepare", "toss", e.getErrorCode().name());
+            throw e;
+        } catch (RuntimeException e) {
+            businessMetricsService.recordPaymentFailed("prepare", "toss", "system_error");
+            throw e;
+        }
+    }
+
+    private PaymentPrepareResponse prepareTossPaymentInternal(Long userId, PaymentPrepareRequest request) {
         validateAuthenticatedUser(userId);
 
         Application application = getApplicationOwnedByUser(request.getApplicationId(), userId);
@@ -53,6 +67,8 @@ public class PaymentService {
             Payment payment = existingPayment.get();
 
             if (payment.isReady()) {
+                businessMetricsService.recordPaymentPrepared("toss", "ready", "already_ready");
+
                 return PaymentPrepareResponse.of(
                         payment,
                         application,
@@ -84,7 +100,10 @@ public class PaymentService {
         Payment savedPayment = paymentRepository.save(payment);
 
         if (savedPayment.isApproved()) {
+            businessMetricsService.recordPaymentPrepared("free", "approved", "success");
             notificationService.createPaymentDoneNotification(userId, savedPayment.getId(), program.getTitle());
+        } else {
+            businessMetricsService.recordPaymentPrepared("toss", "ready", "success");
         }
 
         return PaymentPrepareResponse.of(
@@ -99,6 +118,18 @@ public class PaymentService {
 
     @Transactional
     public PaymentResultResponse confirmTossPayment(Long userId, TossPaymentConfirmRequest request) {
+        try {
+            return confirmTossPaymentInternal(userId, request);
+        } catch (CustomException e) {
+            businessMetricsService.recordPaymentFailed("confirm", "toss", e.getErrorCode().name());
+            throw e;
+        } catch (RuntimeException e) {
+            businessMetricsService.recordPaymentFailed("confirm", "toss", "system_error");
+            throw e;
+        }
+    }
+
+    private PaymentResultResponse confirmTossPaymentInternal(Long userId, TossPaymentConfirmRequest request) {
         validateAuthenticatedUser(userId);
 
         Payment payment = paymentRepository.findByOrderId(request.getOrderId())
@@ -130,11 +161,25 @@ public class PaymentService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PROGRAM_NOT_FOUND));
         notificationService.createPaymentDoneNotification(userId, payment.getId(), program.getTitle());
 
+        businessMetricsService.recordPaymentConfirmed("toss");
+
         return PaymentResultResponse.of(payment, application);
     }
 
     @Transactional
     public PaymentResultResponse failTossPayment(Long userId, TossPaymentFailRequest request) {
+        try {
+            return failTossPaymentInternal(userId, request);
+        } catch (CustomException e) {
+            businessMetricsService.recordPaymentFailed("fail", "toss", e.getErrorCode().name());
+            throw e;
+        } catch (RuntimeException e) {
+            businessMetricsService.recordPaymentFailed("fail", "toss", "system_error");
+            throw e;
+        }
+    }
+
+    private PaymentResultResponse failTossPaymentInternal(Long userId, TossPaymentFailRequest request) {
         validateAuthenticatedUser(userId);
 
         Payment payment = paymentRepository.findByOrderId(request.getOrderId())
@@ -153,6 +198,8 @@ public class PaymentService {
         );
         application.changeStatus(ApplicationStatus.FAILED);
         program.restoreRemainCapacity();
+
+        businessMetricsService.recordPaymentFailurePersisted("fail", "toss", "payment_failed");
 
         return PaymentResultResponse.of(payment, application);
     }

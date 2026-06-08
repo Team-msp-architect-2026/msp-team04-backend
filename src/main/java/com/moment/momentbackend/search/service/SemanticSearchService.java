@@ -3,6 +3,7 @@ package com.moment.momentbackend.search.service;
 import com.moment.momentbackend.embedding.client.EmbeddingServiceClient;
 import com.moment.momentbackend.embedding.dto.EmbeddingRequestDto;
 import com.moment.momentbackend.embedding.dto.EmbeddingResponseDto;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.program.repository.ProgramRepository;
 import com.moment.momentbackend.search.client.RerankerClient;
@@ -40,8 +41,16 @@ public class SemanticSearchService {
     private final OpenSearchClient openSearchClient;
     private final ProgramRepository programRepository;
     private final RerankerClient rerankerClient;
+    private final BusinessMetricsService businessMetricsService;
 
     public List<SemanticSearchResponseDto> search(String query) {
+        return businessMetricsService.recordSearch(
+                "semantic",
+                () -> searchInternal(query)
+        );
+    }
+
+    private List<SemanticSearchResponseDto> searchInternal(String query) {
         String normalizedQuery = normalizeQuery(query);
         long startedAt = System.currentTimeMillis();
 
@@ -51,12 +60,14 @@ public class SemanticSearchService {
 
         if (!embeddingResponse.isSuccess() || embeddingResponse.getVector() == null) {
             log.warn("[시맨틱 검색] 임베딩 실패 query={}", normalizedQuery);
+            businessMetricsService.recordSearchSource("semantic", "embedding_failed");
             return List.of();
         }
 
         Map<Long, Double> scoreMap = searchOpenSearch(normalizedQuery, embeddingResponse.getVector());
 
         if (scoreMap.isEmpty()) {
+            businessMetricsService.recordSearchSource("semantic", "opensearch_empty");
             return List.of();
         }
 
@@ -83,6 +94,8 @@ public class SemanticSearchService {
                 rerankedResults.size(),
                 elapsedMs
         );
+
+        businessMetricsService.recordSearchSource("semantic", "opensearch");
 
         return rerankedResults;
     }

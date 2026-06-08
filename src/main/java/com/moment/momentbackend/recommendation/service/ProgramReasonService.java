@@ -8,6 +8,7 @@ import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.global.redis.RedisService;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.program.repository.ProgramRepository;
@@ -51,9 +52,17 @@ public class ProgramReasonService {
     private final ProgramReasonAiClient programReasonAiClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final BusinessMetricsService businessMetricsService;
 
     @Transactional(readOnly = true)
     public ProgramReasonResponse generate(Long userId, Long programId, Long preferenceId) {
+        return businessMetricsService.recordRecommendation(
+                "program_reason",
+                () -> generateInternal(userId, programId, preferenceId)
+        );
+    }
+
+    private ProgramReasonResponse generateInternal(Long userId, Long programId, Long preferenceId) {
         validateUserId(userId);
 
         RecommendationPreference preference = preferenceRepository.findByIdAndUserId(preferenceId, userId)
@@ -85,9 +94,14 @@ public class ProgramReasonService {
         ProgramReasonAiRequest aiRequest = buildAiRequest(child, preference, program, concerns, childAge, score);
         String cacheKey = buildCacheKey(programId, preferenceId, aiRequest);
 
-        return redisService.getValue(cacheKey)
+        ProgramReasonResponse response = redisService.getValue(cacheKey)
                 .map(this::readCachedResponse)
                 .orElseGet(() -> generateAndCache(cacheKey, aiRequest, score));
+
+        String source = response.source();
+        businessMetricsService.recordRecommendationSource("program_reason", source);
+
+        return response;
     }
 
     private ProgramReasonResponse generateAndCache(

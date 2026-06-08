@@ -9,6 +9,7 @@ import com.moment.momentbackend.application.type.ApplicationStatus;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.global.redis.RedisService;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.program.repository.ProgramRepository;
@@ -31,6 +32,7 @@ public class ApplicationService {
     private final ProgramRepository programRepository;
     private final ChildProfileRepository childProfileRepository;
     private final RedisService redisService;
+    private final BusinessMetricsService businessMetricsService;
 
     @Transactional(readOnly = true)
     public ApplicationAvailabilityResponse getAvailability(Long programId) {
@@ -42,6 +44,18 @@ public class ApplicationService {
 
     @Transactional
     public ApplicationCreateResponse createApplication(Long userId, ApplicationCreateRequest request) {
+        try {
+            return createApplicationInternal(userId, request);
+        } catch (CustomException e) {
+            businessMetricsService.recordApplicationFailed(e.getErrorCode().name());
+            throw e;
+        } catch (RuntimeException e) {
+            businessMetricsService.recordApplicationFailed("system_error");
+            throw e;
+        }
+    }
+
+    private ApplicationCreateResponse createApplicationInternal(Long userId, ApplicationCreateRequest request) {
         validateAuthenticatedUser(userId);
         validateAgreement(request);
 
@@ -81,11 +95,15 @@ public class ApplicationService {
 
             Application savedApplication = applicationRepository.save(application);
 
-            return ApplicationCreateResponse.of(
+            ApplicationCreateResponse response = ApplicationCreateResponse.of(
                     savedApplication,
                     program.getTitle(),
                     program.getRemainCapacity()
             );
+
+            businessMetricsService.recordApplicationCreated();
+
+            return response;
         } finally {
             redisService.unlock(lockKey, lockValue);
         }
