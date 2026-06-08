@@ -6,6 +6,7 @@ import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.search.client.SearchSuggestionAiClient;
 import com.moment.momentbackend.search.dto.AiSearchSuggestionResponse;
 import com.moment.momentbackend.search.dto.RecentSearchResponse;
@@ -49,9 +50,17 @@ public class SearchService {
     private final ChildProfileRepository childProfileRepository;
     private final ChildConcernRepository childConcernRepository;
     private final SearchSuggestionAiClient searchSuggestionAiClient;
+    private final BusinessMetricsService businessMetricsService;
 
     @Transactional
     public Page<SearchProgramResponse> searchPrograms(Long userId, String keyword, Pageable pageable) {
+        return businessMetricsService.recordSearch(
+                "basic",
+                () -> searchProgramsInternal(userId, keyword, pageable)
+        );
+    }
+
+    private Page<SearchProgramResponse> searchProgramsInternal(Long userId, String keyword, Pageable pageable) {
         String normalizedKeyword = normalizeKeyword(keyword);
 
         if (userId != null) {
@@ -77,6 +86,13 @@ public class SearchService {
 
     @Transactional(readOnly = true)
     public List<AiSearchSuggestionResponse> getSearchSuggestions(Long userId) {
+        return businessMetricsService.recordSearch(
+                "suggestion",
+                () -> getSearchSuggestionsInternal(userId)
+        );
+    }
+
+    private List<AiSearchSuggestionResponse> getSearchSuggestionsInternal(Long userId) {
         validateUserId(userId);
 
         List<String> recentKeywords = getRecentKeywords(userId);
@@ -98,9 +114,11 @@ public class SearchService {
                 .orElse(List.of());
 
         if (!aiResponses.isEmpty()) {
+            businessMetricsService.recordSearchSource("suggestion", "ai");
             return aiResponses;
         }
 
+        businessMetricsService.recordSearchSource("suggestion", "fallback");
         return getFallbackSearchSuggestions(userId);
     }
 

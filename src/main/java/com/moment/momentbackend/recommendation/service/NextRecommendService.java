@@ -11,6 +11,7 @@ import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.global.redis.RedisService;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.program.repository.ProgramRepository;
@@ -51,6 +52,7 @@ public class NextRecommendService {
     private final NextRecommendAiClient nextRecommendAiClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final BusinessMetricsService businessMetricsService;
 
     private static final Map<String, List<String>> COMPLEMENT_MAP = new HashMap<>();
     static {
@@ -74,6 +76,13 @@ public class NextRecommendService {
 
     @Transactional(readOnly = true)
     public NextRecommendResponseDto getNextRecommend(Long userId, Long reservationId) {
+        return businessMetricsService.recordRecommendation(
+                "next",
+                () -> getNextRecommendInternal(userId, reservationId)
+        );
+    }
+
+    private NextRecommendResponseDto getNextRecommendInternal(Long userId, Long reservationId) {
         validateUserId(userId);
 
         Application application = applicationRepository.findByIdAndUserId(reservationId, userId)
@@ -106,6 +115,13 @@ public class NextRecommendService {
 
     @Transactional(readOnly = true)
     public NextRecommendExplainResponse explainNextRecommend(Long userId, Long applicationId) {
+        return businessMetricsService.recordRecommendation(
+                "next_explain",
+                () -> explainNextRecommendInternal(userId, applicationId)
+        );
+    }
+
+    private NextRecommendExplainResponse explainNextRecommendInternal(Long userId, Long applicationId) {
         validateUserId(userId);
 
         Application application = applicationRepository.findByIdAndUserId(applicationId, userId)
@@ -134,10 +150,15 @@ public class NextRecommendService {
         NextRecommendAiRequest aiRequest = buildAiRequest(child, concerns, applied, candidates);
         String cacheKey = buildCacheKey(applicationId, aiRequest);
 
-        return redisService.getValue(cacheKey)
+        NextRecommendExplainResponse response = redisService.getValue(cacheKey)
                 .map(this::readCachedResponse)
                 .filter(this::isValidAiResponse)
                 .orElseGet(() -> generateAndCache(cacheKey, aiRequest));
+
+        String source = response.source();
+        businessMetricsService.recordRecommendationSource("next_explain", source);
+
+        return response;
     }
 
     private NextRecommendExplainResponse generateAndCache(
