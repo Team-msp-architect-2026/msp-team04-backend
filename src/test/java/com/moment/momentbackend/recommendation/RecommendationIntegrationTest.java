@@ -86,7 +86,7 @@ class RecommendationIntegrationTest {
         when(request.getTransportType()).thenReturn(TransportType.WALK);
         when(request.getMoveTime()).thenReturn(MoveTime.UNDER_TEN);
         when(request.getOnlinePreference()).thenReturn(OnlinePreference.ANY);
-        when(request.getClassType()).thenReturn(ClassType.INDIVIDUAL);
+        when(request.getClassType()).thenReturn(ClassType.ONE_ON_ONE);
 
         when(childProfileRepository.findByIdAndUserId(1L, userId)).thenReturn(Optional.of(child));
 
