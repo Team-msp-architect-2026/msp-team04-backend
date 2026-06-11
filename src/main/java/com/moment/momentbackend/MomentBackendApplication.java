@@ -7,6 +7,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.Arrays;
 
+import org.springframework.cache.annotation.EnableCaching;
+
+@EnableCaching
 @SpringBootApplication
 @EnableScheduling
 public class MomentBackendApplication {
