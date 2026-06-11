@@ -35,7 +35,7 @@ public class ChildProfile {
     @Column
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "childProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "childProfile", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ChildConcern> concerns = new ArrayList<>();
 
     @Builder

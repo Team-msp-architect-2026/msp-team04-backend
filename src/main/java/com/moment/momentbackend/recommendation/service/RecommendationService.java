@@ -56,6 +56,8 @@ public class RecommendationService {
                 .moveTime(request.getMoveTime())
                 .onlinePreference(request.getOnlinePreference())
                 .classType(request.getClassType())
+                .concerns(request.getConcerns())
+                .subjectDetails(request.getSubjectDetails())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -84,20 +86,36 @@ public class RecommendationService {
 
         aiRecommendationRepository.deleteAllByPreferenceId(preferenceId);
 
-        List<String> concerns = childConcernRepository.findByChildProfileId(childId)
+        List<String> childConcerns = childConcernRepository.findByChildProfileId(childId)
                 .stream()
                 .map(ChildConcern::getConcern)
                 .toList();
+
+        List<String> recommendationKeywords = new ArrayList<>();
+        recommendationKeywords.addAll(childConcerns);
+
+        if (preference.getConcerns() != null) {
+            recommendationKeywords.addAll(preference.getConcerns());
+        }
+
+        if (preference.getSubjectDetails() != null) {
+            recommendationKeywords.addAll(preference.getSubjectDetails());
+        }
 
         List<Program> programs = programQueryRepository.findFilteredPrograms(preference, childAge);
 
         List<ScoredProgram> scored = new ArrayList<>();
         for (Program program : programs) {
             ScoreBreakdownDto score = scoringService.calculate(
-                    program, preference, childAge, userLat, userLon, concerns);
+                    program, preference, childAge, userLat, userLon, recommendationKeywords);
             scored.add(new ScoredProgram(program, score));
         }
-        scored.sort(Comparator.comparing(s -> s.score.getTotalScore().negate()));
+
+// 점수 높은 순으로 정렬한 뒤 rankNo를 부여한다.
+        scored.sort(
+                Comparator.comparing((ScoredProgram s) -> s.score().getTotalScore())
+                        .reversed()
+        );
 
         List<AiRecommendation> recommendations = new ArrayList<>();
         for (int i = 0; i < scored.size(); i++) {
@@ -179,13 +197,31 @@ public class RecommendationService {
 
     private String buildReason(Program program, ScoreBreakdownDto score, boolean isTop3) {
         StringBuilder sb = new StringBuilder();
-        if (isTop3) sb.append("✨ 추천 TOP3! ");
+
+        if (isTop3) {
+            sb.append("✨ 추천 TOP3! ");
+        }
+
         sb.append(program.getTitle()).append("은(는) ");
-        if (score.getScoreAge().doubleValue() > 15) sb.append("연령대가 딱 맞고 ");
-        if (score.getScoreBudget().doubleValue() > 15) sb.append("예산 내 수업이며 ");
-        if (score.getScoreReview().doubleValue() > 7) sb.append("리뷰 평점이 높습니다. ");
-        if (score.getScoreKeyword().doubleValue() > 0) sb.append("관심 키워드와 일치합니다. ");
+
+        if (score.getScoreAge().doubleValue() >= 15) {
+            sb.append("연령대가 잘 맞고 ");
+        }
+
+        if (score.getScoreBudget().doubleValue() >= 15) {
+            sb.append("예산 조건에 적합하며 ");
+        }
+
+        if (score.getScoreKeyword().doubleValue() > 0) {
+            sb.append("관심 키워드와 잘 맞습니다. ");
+        }
+
+        if (score.getScoreReview().doubleValue() >= 7) {
+            sb.append("후기 만족도도 높은 편입니다. ");
+        }
+
         sb.append("(총점: ").append(score.getTotalScore()).append("점)");
+
         return sb.toString();
     }
 

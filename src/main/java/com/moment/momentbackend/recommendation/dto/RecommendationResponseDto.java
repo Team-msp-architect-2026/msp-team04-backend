@@ -32,7 +32,7 @@ public class RecommendationResponseDto {
         this.isFree = program.getIsFree();
         this.classType = program.getClassType();
         this.isRecruiting = program.getIsRecruiting();
-        this.imageUrl = program.getImageUrl();
+        this.imageUrl = normalizeImageUrl(program.getImageUrl());
         this.rankNo = rec.getRankNo();
         this.isTop3 = rec.getIsTop3();
         this.recommendReason = rec.getRecommendReason();
@@ -46,5 +46,21 @@ public class RecommendationResponseDto {
                 .scoreReview(rec.getScoreReview())
                 .totalScore(rec.getTotalScore())
                 .build();
+    }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+            return imageUrl;
+        }
+
+        if (imageUrl.startsWith("/")) {
+            return "https://yeyak.seoul.go.kr" + imageUrl;
+        }
+
+        return imageUrl;
     }
 }

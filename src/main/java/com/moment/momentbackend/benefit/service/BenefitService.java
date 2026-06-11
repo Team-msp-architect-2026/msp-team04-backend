@@ -78,6 +78,7 @@ public class BenefitService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
         return benefitMatchRepository.findAllByChildIdWithBenefit(childId).stream()
+                .limit(50)
                 .map(BenefitMatchResponseDto::new)
                 .collect(Collectors.toList());
     }
