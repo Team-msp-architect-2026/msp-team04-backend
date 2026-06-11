@@ -2,9 +2,7 @@ package com.moment.momentbackend.child.service;
 
 import com.moment.momentbackend.child.dto.ChildRequestDto;
 import com.moment.momentbackend.child.dto.ChildResponseDto;
-import com.moment.momentbackend.child.entity.ChildConcern;
 import com.moment.momentbackend.child.entity.ChildProfile;
-import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
@@ -15,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 public class ChildService {
 
     private final ChildProfileRepository childProfileRepository;
-    private final ChildConcernRepository childConcernRepository;
 
     @Transactional
     public ChildResponseDto createChild(Long userId, ChildRequestDto request) {
@@ -35,19 +34,22 @@ public class ChildService {
                 .birthDate(request.getBirthDate())
                 .createdAt(LocalDateTime.now())
                 .build();
-        childProfileRepository.save(childProfile);
 
-        saveConcerns(childProfile, request.getConcerns());
+        childProfile.replaceConcerns(normalizeConcerns(request.getConcerns()));
 
-        return new ChildResponseDto(childProfile);
+        ChildProfile savedChildProfile = childProfileRepository.save(childProfile);
+
+        return new ChildResponseDto(savedChildProfile);
     }
 
+    @Transactional(readOnly = true)
     public List<ChildResponseDto> getChildren(Long userId) {
         return childProfileRepository.findAllByUserId(userId).stream()
                 .map(ChildResponseDto::new)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public ChildResponseDto getChild(Long userId, Long childId) {
         ChildProfile childProfile = childProfileRepository.findByIdAndUserId(childId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
@@ -62,8 +64,7 @@ public class ChildService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
         childProfile.update(request.getChildName(), request.getBirthDate());
-        childConcernRepository.deleteAllByChildProfileId(childId);
-        saveConcerns(childProfile, request.getConcerns());
+        childProfile.replaceConcerns(normalizeConcerns(request.getConcerns()));
 
         return new ChildResponseDto(childProfile);
     }
@@ -75,19 +76,26 @@ public class ChildService {
         childProfileRepository.delete(childProfile);
     }
 
-    private void saveConcerns(ChildProfile childProfile, List<String> concerns) {
-        if (concerns != null && !concerns.isEmpty()) {
-            concerns.forEach(concern -> {
-                ChildConcern childConcern = ChildConcern.builder()
-                        .childProfile(childProfile)
-                        .concern(concern)
-                        .build();
-                childConcernRepository.save(childConcern);
-            });
+    private Set<String> normalizeConcerns(List<String> concerns) {
+        Set<String> normalizedConcerns = new LinkedHashSet<>();
+
+        if (concerns == null || concerns.isEmpty()) {
+            return normalizedConcerns;
         }
+
+        concerns.stream()
+                .filter(concern -> concern != null && !concern.isBlank())
+                .map(String::trim)
+                .forEach(normalizedConcerns::add);
+
+        return normalizedConcerns;
     }
 
     private void validateAge(LocalDate birthDate) {
+        if (birthDate == null) {
+            throw new CustomException(ErrorCode.INVALID_PARAM);
+        }
+
         int age = Period.between(birthDate, LocalDate.now()).getYears();
         if (age < 3 || age > 13) {
             throw new CustomException(ErrorCode.INVALID_PARAM);
