@@ -56,6 +56,25 @@ public class SearchProgramQueryRepository {
         return new PageImpl<>(content, pageable, total != null ? total : 0);
     }
 
+    public boolean existsByKeyword(String keyword) {
+        QProgram program = QProgram.program;
+        QInstitution institution = QInstitution.institution;
+        QProgramTag programTag = QProgramTag.programTag;
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(program.isPublic.isTrue());
+        builder.and(keywordCondition(program, institution, programTag, keyword));
+
+        Integer result = queryFactory
+                .selectOne()
+                .from(program)
+                .leftJoin(program.institution, institution)
+                .where(builder)
+                .fetchFirst();
+
+        return result != null;
+    }
+
     private BooleanBuilder keywordCondition(QProgram program,
                                             QInstitution institution,
                                             QProgramTag programTag,

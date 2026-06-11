@@ -30,6 +30,15 @@ public class AiSearchSuggestionResponse {
         );
     }
 
+    public static AiSearchSuggestionResponse fromDefaultKeyword(String keyword) {
+        return new AiSearchSuggestionResponse(
+                null,
+                keyword,
+                "PERSONAL",
+                LocalDateTime.now()
+        );
+    }
+
     public static AiSearchSuggestionResponse fromRecentSearch(SearchHistory searchHistory) {
         return new AiSearchSuggestionResponse(
                 searchHistory.getId(),
