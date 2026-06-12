@@ -82,11 +82,6 @@ public class SearchProgramQueryRepository {
         SearchKeywordIntent intent = SearchKeywordIntent.from(keyword);
         BooleanBuilder condition = new BooleanBuilder();
 
-        if (!intent.hasConditionKeyword()) {
-            condition.and(basicKeywordCondition(program, institution, programTag, keyword));
-            return condition;
-        }
-
         if (intent.free) {
             condition.and(freeCondition(program));
         }
@@ -108,10 +103,31 @@ public class SearchProgramQueryRepository {
         }
 
         if (!intent.remainingKeyword.isBlank()) {
-            condition.and(basicKeywordCondition(program, institution, programTag, intent.remainingKeyword));
+            condition.and(tokenizedKeywordCondition(program, institution, programTag, intent.remainingKeyword));
+        }
+
+        if (!intent.hasConditionKeyword() && intent.remainingKeyword.isBlank()) {
+            condition.and(tokenizedKeywordCondition(program, institution, programTag, keyword));
         }
 
         return condition;
+    }
+
+    private BooleanBuilder tokenizedKeywordCondition(QProgram program,
+                                                     QInstitution institution,
+                                                     QProgramTag programTag,
+                                                     String keyword) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        for (String token : keyword.trim().replaceAll("\\s+", " ").split(" ")) {
+            if (token.isBlank()) {
+                continue;
+            }
+
+            builder.and(basicKeywordCondition(program, institution, programTag, token));
+        }
+
+        return builder;
     }
 
     private BooleanExpression basicKeywordCondition(QProgram program,
@@ -124,6 +140,7 @@ public class SearchProgramQueryRepository {
                 .or(program.region.containsIgnoreCase(keyword))
                 .or(program.detailAddress.containsIgnoreCase(keyword))
                 .or(institution.institutionName.containsIgnoreCase(keyword))
+                .or(institution.address.containsIgnoreCase(keyword))
                 .or(JPAExpressions
                         .selectOne()
                         .from(programTag)
@@ -170,19 +187,43 @@ public class SearchProgramQueryRepository {
                                                      QInstitution institution,
                                                      QProgramTag programTag,
                                                      String keyword) {
-        BooleanExpression tagMatched = JPAExpressions
-                .selectOne()
-                .from(programTag)
-                .where(programTag.program.eq(program)
-                        .and(programTag.tag.containsIgnoreCase(keyword)))
-                .exists();
+        SearchKeywordIntent intent = SearchKeywordIntent.from(keyword);
+        String normalizedKeyword = !intent.remainingKeyword.isBlank()
+                ? intent.remainingKeyword
+                : keyword.trim().replaceAll("\\s+", " ");
+
+        BooleanBuilder titleAllTokensMatched = new BooleanBuilder();
+        BooleanBuilder institutionAllTokensMatched = new BooleanBuilder();
+        BooleanBuilder categoryAllTokensMatched = new BooleanBuilder();
+        BooleanBuilder tagAllTokensMatched = new BooleanBuilder();
+        BooleanBuilder descriptionAllTokensMatched = new BooleanBuilder();
+
+        for (String token : normalizedKeyword.split(" ")) {
+            if (token.isBlank()) {
+                continue;
+            }
+
+            titleAllTokensMatched.and(program.title.containsIgnoreCase(token));
+            institutionAllTokensMatched.and(institution.institutionName.containsIgnoreCase(token));
+            categoryAllTokensMatched.and(program.category.containsIgnoreCase(token));
+            descriptionAllTokensMatched.and(program.description.containsIgnoreCase(token));
+            tagAllTokensMatched.and(JPAExpressions
+                    .selectOne()
+                    .from(programTag)
+                    .where(programTag.program.eq(program)
+                            .and(programTag.tag.containsIgnoreCase(token)))
+                    .exists());
+        }
 
         return new CaseBuilder()
-                .when(program.title.containsIgnoreCase(keyword)).then(0)
-                .when(institution.institutionName.containsIgnoreCase(keyword)).then(1)
-                .when(program.category.containsIgnoreCase(keyword)).then(2)
-                .when(tagMatched).then(3)
-                .otherwise(4);
+                .when(program.title.containsIgnoreCase(normalizedKeyword)).then(0)
+                .when(titleAllTokensMatched).then(1)
+                .when(institution.institutionName.containsIgnoreCase(normalizedKeyword)).then(2)
+                .when(institutionAllTokensMatched).then(3)
+                .when(categoryAllTokensMatched).then(4)
+                .when(tagAllTokensMatched).then(5)
+                .when(descriptionAllTokensMatched).then(9)
+                .otherwise(10);
     }
     private static final class SearchKeywordIntent {
 
@@ -226,8 +267,29 @@ public class SearchProgramQueryRepository {
             boolean smallClass = compact.contains("소규모");
 
             String remainingKeyword = normalized;
+
+            remainingKeyword = removeKeyword(remainingKeyword, "찾아줘");
+            remainingKeyword = removeKeyword(remainingKeyword, "추천해줘");
+            remainingKeyword = removeKeyword(remainingKeyword, "알려줘");
+            remainingKeyword = removeKeyword(remainingKeyword, "보여줘");
+            remainingKeyword = removeKeyword(remainingKeyword, "검색해줘");
+            remainingKeyword = removeKeyword(remainingKeyword, "갈 수 있는");
+            remainingKeyword = removeKeyword(remainingKeyword, "들을 수 있는");
+            remainingKeyword = removeKeyword(remainingKeyword, "참여할 수 있는");
+            remainingKeyword = removeKeyword(remainingKeyword, "할 수 있는");
+            remainingKeyword = removeKeyword(remainingKeyword, "하는");
+            remainingKeyword = removeKeyword(remainingKeyword, "에서");
+            remainingKeyword = removeKeyword(remainingKeyword, "으로");
+            remainingKeyword = removeKeyword(remainingKeyword, "아이랑");
+            remainingKeyword = removeKeyword(remainingKeyword, "아이와");
+            remainingKeyword = removeKeyword(remainingKeyword, "아이가");
+            remainingKeyword = removeKeyword(remainingKeyword, "아이");
+            remainingKeyword = removeKeyword(remainingKeyword, "어린이");
+
+            remainingKeyword = removeKeyword(remainingKeyword, "무료로");
             remainingKeyword = removeKeyword(remainingKeyword, "무료");
             remainingKeyword = removeKeyword(remainingKeyword, "무상");
+            remainingKeyword = removeKeyword(remainingKeyword, "주말에");
             remainingKeyword = removeKeyword(remainingKeyword, "주말");
             remainingKeyword = removeKeyword(remainingKeyword, "토요일");
             remainingKeyword = removeKeyword(remainingKeyword, "일요일");
@@ -240,10 +302,14 @@ public class SearchProgramQueryRepository {
             remainingKeyword = removeKeyword(remainingKeyword, "공공");
             remainingKeyword = removeKeyword(remainingKeyword, "기관");
             remainingKeyword = removeKeyword(remainingKeyword, "소규모");
+
+            remainingKeyword = removeAgeExpression(remainingKeyword);
+
             remainingKeyword = removeKeyword(remainingKeyword, "프로그램");
             remainingKeyword = removeKeyword(remainingKeyword, "수업");
             remainingKeyword = removeKeyword(remainingKeyword, "강의");
             remainingKeyword = removeKeyword(remainingKeyword, "클래스");
+
             remainingKeyword = remainingKeyword.trim().replaceAll("\\s+", " ");
 
             return new SearchKeywordIntent(
@@ -258,6 +324,12 @@ public class SearchProgramQueryRepository {
 
         private boolean hasConditionKeyword() {
             return free || weekend || care || publicInstitution || smallClass;
+        }
+
+        private static String removeAgeExpression(String value) {
+            return value.replaceAll("만\\s*\\d+\\s*세", " ")
+                    .replaceAll("\\d+\\s*세", " ")
+                    .replaceAll("\\d+\\s*살", " ");
         }
 
         private static String removeKeyword(String value, String keyword) {
