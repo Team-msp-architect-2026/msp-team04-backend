@@ -1,10 +1,12 @@
 package com.moment.momentbackend.program.dto;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Getter
+@NoArgsConstructor
 public class HomeProgramsResponseDto {
 
     private List<ProgramListResponseDto> freePrograms;
