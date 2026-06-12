@@ -39,7 +39,7 @@ class ScoringServiceTest {
     }
 
     @Test
-    @DisplayName("거리 1km 이하 → 만점(25점)")
+    @DisplayName("거리 1km 이하 → 만점(20점)")
     void distance_within1km_fullScore() {
         when(program.getLatitude()).thenReturn(new BigDecimal("37.5670"));
         when(program.getLongitude()).thenReturn(new BigDecimal("126.9784"));
@@ -47,7 +47,7 @@ class ScoringServiceTest {
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 7, 37.5670, 126.9784, List.of());
 
-        assertThat(score.getScoreDistance()).isEqualByComparingTo("25.00");
+        assertThat(score.getScoreDistance()).isEqualByComparingTo("20.00");
     }
 
     @Test
@@ -59,7 +59,7 @@ class ScoringServiceTest {
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 5, 37.5670, 126.9784, List.of());
 
-        assertThat(score.getScoreDistance()).isEqualByComparingTo("15.00");
+        assertThat(score.getScoreDistance()).isEqualByComparingTo("12.00");
     }
 
     @Test
@@ -71,7 +71,7 @@ class ScoringServiceTest {
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 7, 37.5670, 126.9784, List.of());
 
-        assertThat(score.getScoreDistance()).isEqualByComparingTo("2.50");
+        assertThat(score.getScoreDistance()).isEqualByComparingTo("2.00");
     }
 
     @Test
@@ -80,7 +80,7 @@ class ScoringServiceTest {
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 5, 0.0, 0.0, List.of());
 
-        assertThat(score.getScoreDistance()).isEqualByComparingTo("12.50");
+        assertThat(score.getScoreDistance()).isEqualByComparingTo("10.00");
     }
 
     @Test
@@ -128,7 +128,7 @@ class ScoringServiceTest {
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 5, 0.0, 0.0, List.of());
 
-        assertThat(score.getScoreAge()).isEqualByComparingTo("20.00");
+        assertThat(score.getScoreAge()).isEqualByComparingTo("15.00");
     }
 
     @Test
@@ -140,7 +140,7 @@ class ScoringServiceTest {
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 10, 0.0, 0.0, List.of());
 
-        assertThat(score.getScoreAge()).isEqualByComparingTo("20.00");
+        assertThat(score.getScoreAge()).isEqualByComparingTo("15.00");
     }
 
     @Test
@@ -156,7 +156,7 @@ class ScoringServiceTest {
     }
 
     @Test
-    @DisplayName("키워드 완전 매칭 → 만점(10점)")
+    @DisplayName("키워드 완전 매칭 → 만점(15점)")
     void keyword_fullMatch_fullScore() {
         ProgramTag tag1 = mock(ProgramTag.class);
         ProgramTag tag2 = mock(ProgramTag.class);
@@ -167,11 +167,11 @@ class ScoringServiceTest {
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 5, 0.0, 0.0, List.of("수영", "미술"));
 
-        assertThat(score.getScoreKeyword()).isEqualByComparingTo("10.00");
+        assertThat(score.getScoreKeyword()).isEqualByComparingTo("15.00");
     }
 
     @Test
-    @DisplayName("키워드 50% 매칭 → 5점")
+    @DisplayName("키워드 50% 매칭 → 7.5점")
     void keyword_halfMatch_halfScore() {
         ProgramTag tag1 = mock(ProgramTag.class);
         when(tag1.getTag()).thenReturn("수영");
@@ -180,7 +180,7 @@ class ScoringServiceTest {
         ScoreBreakdownDto score = scoringService.calculate(
                 program, preference, 5, 0.0, 0.0, List.of("수영", "미술"));
 
-        assertThat(score.getScoreKeyword()).isEqualByComparingTo("5.00");
+        assertThat(score.getScoreKeyword()).isEqualByComparingTo("7.50");
     }
 
     @Test
