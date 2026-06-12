@@ -28,8 +28,13 @@ public class SearchProgramResponse {
     private final Double ratingAvg;
     private final Integer reviewCount;
     private final List<String> tags;
+    private final Integer matchScore;
 
     public SearchProgramResponse(Program program) {
+        this(program, 0);
+    }
+
+    public SearchProgramResponse(Program program, Integer matchScore) {
         this.id = program.getId();
         this.name = program.getTitle();
         this.institutionName = program.getInstitution() != null
@@ -58,5 +63,6 @@ public class SearchProgramResponse {
         this.tags = program.getTags().stream()
                 .map(tag -> tag.getTag())
                 .toList();
+        this.matchScore = matchScore != null ? matchScore : 0;
     }
 }

@@ -86,7 +86,10 @@ public class SearchService {
         }
 
         return searchProgramQueryRepository.searchPrograms(normalizedKeyword, pageable)
-                .map(SearchProgramResponse::new);
+                .map(program -> new SearchProgramResponse(
+                        program,
+                        SearchMatchScoreCalculator.calculate(program, normalizedKeyword)
+                ));
     }
 
     @Transactional(readOnly = true)
