@@ -21,5 +21,5 @@ public interface BenefitMatchRepository extends JpaRepository<BenefitMatch, Long
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM BenefitMatch bm WHERE bm.childId = :childId")
-    int deleteAllByChildIdInBulk(@Param("childId") Long childId);
+    void deleteAllByChildId(@Param("childId") Long childId);
 }

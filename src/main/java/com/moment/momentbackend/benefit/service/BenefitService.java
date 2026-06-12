@@ -156,7 +156,7 @@ public class BenefitService {
         int childAge = calculateAge(child);
         Optional<BenefitAssessmentProfile> profile = benefitAssessmentProfileRepository.findByUserId(userId);
 
-        benefitMatchRepository.deleteAllByChildIdInBulk(childId);
+        benefitMatchRepository.deleteAllByChildId(childId);
         benefitMatchRepository.flush();
 
         List<BenefitMatch> matches = findParentingBenefitCandidates().stream()
@@ -241,6 +241,12 @@ public class BenefitService {
 
     private int calculateAge(ChildProfile child) {
         return Period.between(child.getBirthDate(), LocalDate.now()).getYears();
+    }
+
+    public boolean isEligible(BenefitMaster benefit, int childAge, ChildProfile child) {
+        return benefit != null
+                && Boolean.TRUE.equals(benefit.getIsActive())
+                && matchesAge(benefit, childAge);
     }
 
     private BenefitMatch toMatch(
