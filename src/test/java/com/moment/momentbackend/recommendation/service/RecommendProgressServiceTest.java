@@ -51,7 +51,7 @@ class RecommendProgressServiceTest {
                 .moveTime(MoveTime.UNDER_TEN)
                 .classType(ClassType.SMALL)
                 .onlinePreference(OnlinePreference.ANY)
-                .transportType(TransportType.PUBLIC)
+                .transportType(TransportType.CAR)
                 .createdAt(LocalDateTime.now())
                 .build();
 

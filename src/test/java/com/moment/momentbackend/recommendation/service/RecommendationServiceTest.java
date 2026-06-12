@@ -62,7 +62,7 @@ class RecommendationServiceTest {
                 .userId(userId)
                 .childId(2L)
                 .monthlyBudget(MonthlyBudget.ZERO_TO_TEN)
-                .transportType(TransportType.PUBLIC)
+                .transportType(TransportType.CAR)
                 .moveTime(MoveTime.UNDER_TEN)
                 .onlinePreference(OnlinePreference.ANY)
                 .classType(ClassType.SMALL)
@@ -107,7 +107,7 @@ class RecommendationServiceTest {
                 .userId(userId)
                 .childId(2L)
                 .monthlyBudget(MonthlyBudget.ZERO_TO_TEN)
-                .transportType(TransportType.PUBLIC)
+                .transportType(TransportType.CAR)
                 .moveTime(MoveTime.UNDER_TEN)
                 .onlinePreference(OnlinePreference.ANY)
                 .classType(ClassType.SMALL)
@@ -144,7 +144,7 @@ class RecommendationServiceTest {
         PreferenceRequestDto dto = new PreferenceRequestDto();
         setField(dto, "childId", childId);
         setField(dto, "monthlyBudget", MonthlyBudget.ZERO_TO_TEN);
-        setField(dto, "transportType", TransportType.PUBLIC);
+        setField(dto, "transportType", TransportType.CAR);
         setField(dto, "moveTime", MoveTime.UNDER_TEN);
         setField(dto, "onlinePreference", OnlinePreference.ANY);
         setField(dto, "classType", ClassType.SMALL);

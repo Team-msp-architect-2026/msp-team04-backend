@@ -8,6 +8,7 @@ import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.global.redis.RedisService;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.program.repository.ProgramRepository;
@@ -53,9 +54,17 @@ public class Top3CompareService {
     private final Top3CompareAiClient top3CompareAiClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final BusinessMetricsService businessMetricsService;
 
     @Transactional(readOnly = true)
     public Top3CompareResponse compare(Long userId, Long preferenceId) {
+        return businessMetricsService.recordRecommendation(
+                "top3_compare",
+                () -> compareInternal(userId, preferenceId)
+        );
+    }
+
+    private Top3CompareResponse compareInternal(Long userId, Long preferenceId) {
         validateUserId(userId);
 
         RecommendationPreference preference = preferenceRepository.findByIdAndUserId(preferenceId, userId)
@@ -74,9 +83,14 @@ public class Top3CompareService {
         Top3CompareAiRequest aiRequest = buildAiRequest(child, preference, top3Recommendations);
         String cacheKey = buildCacheKey(preferenceId, aiRequest);
 
-        return redisService.getValue(cacheKey)
+        Top3CompareResponse response = redisService.getValue(cacheKey)
                 .map(this::readCachedResponse)
                 .orElseGet(() -> generateAndCache(cacheKey, aiRequest));
+
+        String source = response.source();
+        businessMetricsService.recordRecommendationSource("top3_compare", source);
+
+        return response;
     }
 
     private Top3CompareResponse generateAndCache(

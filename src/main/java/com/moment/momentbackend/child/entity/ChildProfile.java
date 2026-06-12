@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
@@ -50,5 +51,20 @@ public class ChildProfile {
         this.childName = childName;
         this.birthDate = birthDate;
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void replaceConcerns(Collection<String> newConcerns) {
+        this.concerns.clear();
+
+        if (newConcerns == null || newConcerns.isEmpty()) {
+            return;
+        }
+
+        newConcerns.forEach(concern -> this.concerns.add(
+                ChildConcern.builder()
+                        .childProfile(this)
+                        .concern(concern)
+                        .build()
+        ));
     }
 }

@@ -3,6 +3,7 @@ package com.moment.momentbackend.recommendation;
 import com.moment.momentbackend.child.entity.ChildProfile;
 import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.recommendation.dto.PreferenceRequestDto;
 import com.moment.momentbackend.recommendation.entity.AiRecommendation;
 import com.moment.momentbackend.recommendation.entity.RecommendationPreference;
@@ -10,6 +11,7 @@ import com.moment.momentbackend.recommendation.enums.*;
 import com.moment.momentbackend.recommendation.repository.AiRecommendationRepository;
 import com.moment.momentbackend.recommendation.repository.RecommendationPreferenceRepository;
 import com.moment.momentbackend.recommendation.service.RecommendationService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -52,6 +55,18 @@ class RecommendationIntegrationTest {
     @Mock
     private com.moment.momentbackend.recommendation.service.ScoringService scoringService;
 
+    @Mock
+    private BusinessMetricsService businessMetricsService;
+
+    @BeforeEach
+    void setUpBusinessMetrics() {
+        lenient().when(businessMetricsService.recordRecommendation(anyString(), any()))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(1);
+                    return supplier.get();
+                });
+    }
+
     @Test
     @DisplayName("선호도 저장 후 preferenceId 반환 확인")
     void savePreference_returnsId() {
@@ -71,7 +86,7 @@ class RecommendationIntegrationTest {
         when(request.getTransportType()).thenReturn(TransportType.WALK);
         when(request.getMoveTime()).thenReturn(MoveTime.UNDER_TEN);
         when(request.getOnlinePreference()).thenReturn(OnlinePreference.ANY);
-        when(request.getClassType()).thenReturn(ClassType.INDIVIDUAL);
+        when(request.getClassType()).thenReturn(ClassType.ONE_ON_ONE);
 
         when(childProfileRepository.findByIdAndUserId(1L, userId)).thenReturn(Optional.of(child));
 

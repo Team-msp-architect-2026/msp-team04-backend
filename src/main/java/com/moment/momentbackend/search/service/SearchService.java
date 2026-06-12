@@ -6,6 +6,7 @@ import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.search.client.SearchSuggestionAiClient;
 import com.moment.momentbackend.search.dto.AiSearchSuggestionResponse;
 import com.moment.momentbackend.search.dto.RecentSearchResponse;
@@ -42,6 +43,24 @@ public class SearchService {
     private static final int SEARCH_SUGGESTION_LIMIT = 5;
     private static final int RECENT_SUGGESTION_LIMIT = 3;
     private static final int PERSONAL_SUGGESTION_LIMIT = 2;
+    private static final Set<String> QUICK_CONDITION_KEYWORDS = Set.of(
+            "무료 프로그램",
+            "소규모",
+            "공공기관",
+            "주말 프로그램",
+            "놀이"
+    );
+    private static final List<String> DEFAULT_PERSONAL_SEARCH_SUGGESTION_KEYWORDS = List.of(
+            "친구 관계 프로그램",
+            "진로 체험",
+            "자신감 향상 프로그램",
+            "미술 체험",
+            "독서 프로그램",
+            "코딩 체험",
+            "방과후 돌봄",
+            "체육 활동",
+            "창의력 체험"
+    );
 
     private final SearchProgramQueryRepository searchProgramQueryRepository;
     private final SearchHistoryRepository searchHistoryRepository;
@@ -49,9 +68,17 @@ public class SearchService {
     private final ChildProfileRepository childProfileRepository;
     private final ChildConcernRepository childConcernRepository;
     private final SearchSuggestionAiClient searchSuggestionAiClient;
+    private final BusinessMetricsService businessMetricsService;
 
     @Transactional
     public Page<SearchProgramResponse> searchPrograms(Long userId, String keyword, Pageable pageable) {
+        return businessMetricsService.recordSearch(
+                "basic",
+                () -> searchProgramsInternal(userId, keyword, pageable)
+        );
+    }
+
+    private Page<SearchProgramResponse> searchProgramsInternal(Long userId, String keyword, Pageable pageable) {
         String normalizedKeyword = normalizeKeyword(keyword);
 
         if (userId != null) {
@@ -77,6 +104,13 @@ public class SearchService {
 
     @Transactional(readOnly = true)
     public List<AiSearchSuggestionResponse> getSearchSuggestions(Long userId) {
+        return businessMetricsService.recordSearch(
+                "suggestion",
+                () -> getSearchSuggestionsInternal(userId)
+        );
+    }
+
+    private List<AiSearchSuggestionResponse> getSearchSuggestionsInternal(Long userId) {
         validateUserId(userId);
 
         List<String> recentKeywords = getRecentKeywords(userId);
@@ -97,10 +131,18 @@ public class SearchService {
                 .map(this::toGeneratedSuggestionResponses)
                 .orElse(List.of());
 
-        if (!aiResponses.isEmpty()) {
-            return aiResponses;
+        Map<String, AiSearchSuggestionResponse> resultBackedAiSuggestions = new LinkedHashMap<>();
+        int aiSuggestionCount = addSuggestionResponses(resultBackedAiSuggestions, aiResponses);
+
+        if (aiSuggestionCount > 0) {
+            addChildContextSearchSuggestions(userId, resultBackedAiSuggestions);
+            addPersonalAiSuggestions(userId, resultBackedAiSuggestions);
+            addDefaultPersonalSearchSuggestions(resultBackedAiSuggestions);
+            businessMetricsService.recordSearchSource("suggestion", "ai");
+            return limitedSuggestions(resultBackedAiSuggestions);
         }
 
+        businessMetricsService.recordSearchSource("suggestion", "fallback");
         return getFallbackSearchSuggestions(userId);
     }
 
@@ -142,10 +184,171 @@ public class SearchService {
     private List<AiSearchSuggestionResponse> getFallbackSearchSuggestions(Long userId) {
         Map<String, AiSearchSuggestionResponse> suggestions = new LinkedHashMap<>();
 
-        addRecentSearchSuggestions(userId, suggestions);
+        addChildContextSearchSuggestions(userId, suggestions);
         addPersonalAiSuggestions(userId, suggestions);
-        addGlobalAiSuggestions(suggestions);
+        addDefaultPersonalSearchSuggestions(suggestions);
 
+        return limitedSuggestions(suggestions);
+    }
+
+    private int addSuggestionResponses(
+            Map<String, AiSearchSuggestionResponse> suggestions,
+            List<AiSearchSuggestionResponse> responses
+    ) {
+        int addedCount = 0;
+
+        for (AiSearchSuggestionResponse response : responses) {
+            if (suggestions.size() >= SEARCH_SUGGESTION_LIMIT) {
+                return addedCount;
+            }
+
+            boolean added = addSuggestion(
+                    suggestions,
+                    response.getKeyword(),
+                    response
+            );
+
+            if (added) {
+                addedCount++;
+            }
+        }
+
+        return addedCount;
+    }
+
+    private void addChildContextSearchSuggestions(
+            Long userId,
+            Map<String, AiSearchSuggestionResponse> suggestions
+    ) {
+        for (ChildProfile child : childProfileRepository.findAllByUserId(userId)) {
+            if (suggestions.size() >= SEARCH_SUGGESTION_LIMIT) {
+                return;
+            }
+
+            for (String keyword : getChildContextSearchKeywords(child)) {
+                if (suggestions.size() >= SEARCH_SUGGESTION_LIMIT) {
+                    return;
+                }
+
+                addSuggestion(
+                        suggestions,
+                        keyword,
+                        AiSearchSuggestionResponse.fromGeneratedKeyword(keyword)
+                );
+            }
+        }
+    }
+
+    private List<String> getChildContextSearchKeywords(ChildProfile child) {
+        LinkedHashSet<String> keywords = new LinkedHashSet<>();
+        Integer age = calculateAge(child);
+
+        for (String concern : getConcerns(child)) {
+            String normalizedConcern = normalizeSuggestionKey(concern);
+
+            if (normalizedConcern.contains("친구") || normalizedConcern.contains("사회성")) {
+                keywords.add("친구 관계 프로그램");
+                keywords.add("또래 관계 프로그램");
+                keywords.add("사회성 발달 프로그램");
+            }
+
+            if (normalizedConcern.contains("진로")) {
+                keywords.add("진로 체험");
+                keywords.add("직업 체험");
+                keywords.add("진로 탐색");
+            }
+
+            if (normalizedConcern.contains("성격")
+                    || normalizedConcern.contains("정서")
+                    || normalizedConcern.contains("자신감")) {
+                keywords.add("자신감 향상 프로그램");
+                keywords.add("정서 발달 프로그램");
+                keywords.add("감정 표현 프로그램");
+            }
+
+            if (normalizedConcern.contains("기초학습")) {
+                keywords.add("기초학습 프로그램");
+                keywords.add("학습 습관 만들기");
+            }
+
+            if (normalizedConcern.contains("수학")) {
+                keywords.add("수학 체험");
+                keywords.add("기초 수학");
+            }
+
+            if (normalizedConcern.contains("코딩")) {
+                keywords.add("코딩 체험");
+                keywords.add("어린이 코딩");
+            }
+
+            if (normalizedConcern.contains("미술")) {
+                keywords.add("미술 체험");
+                keywords.add("창의 미술");
+            }
+
+            if (normalizedConcern.contains("영어")) {
+                keywords.add("영어 체험");
+                keywords.add("영어 독서");
+            }
+
+            if (normalizedConcern.contains("체육")) {
+                keywords.add("체육 활동");
+                keywords.add("스포츠 체험");
+            }
+
+            if (normalizedConcern.contains("독서")) {
+                keywords.add("독서 프로그램");
+                keywords.add("책놀이");
+            }
+
+            if (normalizedConcern.contains("창의")) {
+                keywords.add("창의력 체험");
+                keywords.add("과학 체험");
+                keywords.add("창의 미술");
+            }
+
+            if (normalizedConcern.contains("돌봄")) {
+                keywords.add("방과후 돌봄");
+                keywords.add("돌봄 프로그램");
+            }
+        }
+
+        if (age != null && age <= 6) {
+            keywords.add("키즈카페");
+            keywords.add("책놀이");
+            keywords.add("미술 체험");
+        } else if (age != null && age <= 9) {
+            keywords.add("체험학습");
+            keywords.add("과학 체험");
+            keywords.add("독서 프로그램");
+        } else {
+            keywords.add("진로 체험");
+            keywords.add("스포츠 체험");
+            keywords.add("코딩 체험");
+        }
+
+        return keywords.stream().toList();
+    }
+
+    private void addDefaultPersonalSearchSuggestions(
+            Map<String, AiSearchSuggestionResponse> suggestions
+    ) {
+        for (String keyword : DEFAULT_PERSONAL_SEARCH_SUGGESTION_KEYWORDS) {
+            if (suggestions.size() >= SEARCH_SUGGESTION_LIMIT) {
+                return;
+            }
+
+            addSuggestion(
+                    suggestions,
+                    keyword,
+                    AiSearchSuggestionResponse.fromDefaultKeyword(keyword)
+            );
+        }
+    }
+
+    private List<AiSearchSuggestionResponse> limitedSuggestions(
+            Map<String, AiSearchSuggestionResponse> suggestions
+    ) {
         return suggestions.values().stream()
                 .limit(SEARCH_SUGGESTION_LIMIT)
                 .toList();
@@ -269,7 +472,17 @@ public class SearchService {
             return false;
         }
 
-        String key = normalizeSuggestionKey(keyword);
+        String normalizedKeyword = keyword.trim().replaceAll("\\s+", " ");
+
+        if (isQuickConditionKeyword(normalizedKeyword)) {
+            return false;
+        }
+
+        if (!hasSearchResult(normalizedKeyword)) {
+            return false;
+        }
+
+        String key = normalizeSuggestionKey(normalizedKeyword);
 
         if (suggestions.containsKey(key)) {
             return false;
@@ -277,6 +490,14 @@ public class SearchService {
 
         suggestions.put(key, response);
         return true;
+    }
+
+    private boolean hasSearchResult(String keyword) {
+        return searchProgramQueryRepository.existsByKeyword(keyword);
+    }
+
+    private boolean isQuickConditionKeyword(String keyword) {
+        return QUICK_CONDITION_KEYWORDS.contains(normalizeSuggestionKey(keyword));
     }
 
     private void saveRecentKeyword(Long userId, String keyword) {

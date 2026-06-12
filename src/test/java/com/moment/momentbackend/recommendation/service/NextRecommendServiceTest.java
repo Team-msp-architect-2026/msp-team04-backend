@@ -4,9 +4,11 @@ import com.moment.momentbackend.application.entity.Application;
 import com.moment.momentbackend.application.repository.ApplicationRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.program.repository.ProgramRepository;
 import com.moment.momentbackend.recommendation.dto.NextRecommendResponseDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +21,7 @@ import org.mockito.quality.Strictness;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
@@ -35,6 +38,18 @@ class NextRecommendServiceTest {
 
     @Mock
     private ProgramRepository programRepository;
+
+    @Mock
+    private BusinessMetricsService businessMetricsService;
+
+    @BeforeEach
+    void setUpBusinessMetrics() {
+        given(businessMetricsService.recordRecommendation(anyString(), any()))
+                .willAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(1);
+                    return supplier.get();
+                });
+    }
 
     // ── 공통 픽스처 ──────────────────────────────────────────────
 

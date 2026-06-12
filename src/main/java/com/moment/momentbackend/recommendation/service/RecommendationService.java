@@ -6,6 +6,7 @@ import com.moment.momentbackend.child.repository.ChildConcernRepository;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
 import com.moment.momentbackend.global.exception.CustomException;
 import com.moment.momentbackend.global.exception.ErrorCode;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.program.entity.Program;
 import com.moment.momentbackend.recommendation.dto.AiRecommendationResponseDto;
 import com.moment.momentbackend.recommendation.dto.PreferenceRequestDto;
@@ -41,6 +42,7 @@ public class RecommendationService {
     private final ChildConcernRepository childConcernRepository;
     private final ProgramQueryRepository programQueryRepository;
     private final ScoringService scoringService;
+    private final BusinessMetricsService businessMetricsService;
 
     @Transactional
     public Long savePreference(Long userId, PreferenceRequestDto request) {
@@ -76,6 +78,15 @@ public class RecommendationService {
     public Page<RecommendationResponseDto> recommend(Long userId, Long childId,
                                                      Long preferenceId, Pageable pageable,
                                                      double userLat, double userLon) {
+        return businessMetricsService.recordRecommendation(
+                "deterministic",
+                () -> recommendInternal(userId, childId, preferenceId, pageable, userLat, userLon)
+        );
+    }
+
+    private Page<RecommendationResponseDto> recommendInternal(Long userId, Long childId,
+                                                              Long preferenceId, Pageable pageable,
+                                                              double userLat, double userLon) {
         ChildProfile child = childProfileRepository.findByIdAndUserId(childId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
 
@@ -185,6 +196,13 @@ public class RecommendationService {
 
     @Transactional(readOnly = true)
     public List<AiRecommendationResponseDto> getTop3Recommendations(Long userId, Long preferenceId) {
+        return businessMetricsService.recordRecommendation(
+                "top3_lookup",
+                () -> getTop3RecommendationsInternal(userId, preferenceId)
+        );
+    }
+
+    private List<AiRecommendationResponseDto> getTop3RecommendationsInternal(Long userId, Long preferenceId) {
         preferenceRepository.findByIdAndUserId(preferenceId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
 

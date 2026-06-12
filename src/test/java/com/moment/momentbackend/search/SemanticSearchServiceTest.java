@@ -3,9 +3,11 @@ package com.moment.momentbackend.search;
 import com.moment.momentbackend.embedding.client.EmbeddingServiceClient;
 import com.moment.momentbackend.embedding.dto.EmbeddingRequestDto;
 import com.moment.momentbackend.embedding.dto.EmbeddingResponseDto;
+import com.moment.momentbackend.global.metrics.BusinessMetricsService;
 import com.moment.momentbackend.program.repository.ProgramRepository;
 import com.moment.momentbackend.search.dto.SemanticSearchResponseDto;
 import com.moment.momentbackend.search.service.SemanticSearchService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,9 +19,11 @@ import org.mockito.quality.Strictness;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +41,18 @@ class SemanticSearchServiceTest {
 
     @Mock
     private ProgramRepository programRepository;
+
+    @Mock
+    private BusinessMetricsService businessMetricsService;
+
+    @BeforeEach
+    void setUpBusinessMetrics() {
+        given(businessMetricsService.recordSearch(anyString(), any()))
+                .willAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(1);
+                    return supplier.get();
+                });
+    }
 
     @Test
     @DisplayName("임베딩 실패 시 빈 배열 반환")
