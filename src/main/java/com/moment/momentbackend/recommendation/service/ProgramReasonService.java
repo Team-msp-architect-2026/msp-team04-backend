@@ -66,8 +66,13 @@ public class ProgramReasonService {
         validateUserId(userId);
 
         RecommendationPreference preference = resolvePreference(userId, preferenceId, childId);
+        Long resolvedChildId = preference != null ? preference.getChildId() : childId;
 
-        ChildProfile child = childProfileRepository.findByIdAndUserId(preference.getChildId(), userId)
+        if (resolvedChildId == null) {
+            throw new CustomException(ErrorCode.PREFERENCE_NOT_FOUND);
+        }
+
+        ChildProfile child = childProfileRepository.findByIdAndUserId(resolvedChildId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CHILD_ACCESS_DENIED));
 
         Program program = programRepository.findDetailById(programId)
@@ -91,7 +96,12 @@ public class ProgramReasonService {
         );
 
         ProgramReasonAiRequest aiRequest = buildAiRequest(child, preference, program, concerns, childAge, score);
-        String cacheKey = buildCacheKey(programId, preferenceId, aiRequest);
+        String cacheKey = buildCacheKey(
+                programId,
+                preference != null ? preference.getId() : null,
+                child.getId(),
+                aiRequest
+        );
 
         ProgramReasonResponse response = redisService.getValue(cacheKey)
                 .map(this::readCachedResponse)
@@ -143,7 +153,7 @@ public class ProgramReasonService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CHILD_ACCESS_DENIED));
 
         return preferenceRepository.findTopByUserIdAndChildIdOrderByCreatedAtDesc(userId, childId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
+                .orElse(null);
     }
 
     private ProgramReasonAiRequest buildAiRequest(
@@ -160,15 +170,7 @@ public class ProgramReasonService {
                         childAge,
                         concerns
                 ),
-                new ProgramReasonPreferenceRequest(
-                        preference.getId(),
-                        trim(preference.getRegion()),
-                        enumName(preference.getMonthlyBudget()),
-                        enumName(preference.getTransportType()),
-                        enumName(preference.getMoveTime()),
-                        enumName(preference.getOnlinePreference()),
-                        enumName(preference.getClassType())
-                ),
+                buildPreferenceRequest(preference),
                 new ProgramReasonProgramRequest(
                         program.getId(),
                         trim(program.getTitle()),
@@ -197,6 +199,22 @@ public class ProgramReasonService {
                                 : List.of(),
                         buildScoreBreakdown(score)
                 )
+        );
+    }
+
+    private ProgramReasonPreferenceRequest buildPreferenceRequest(RecommendationPreference preference) {
+        if (preference == null) {
+            return null;
+        }
+
+        return new ProgramReasonPreferenceRequest(
+                preference.getId(),
+                trim(preference.getRegion()),
+                enumName(preference.getMonthlyBudget()),
+                enumName(preference.getTransportType()),
+                enumName(preference.getMoveTime()),
+                enumName(preference.getOnlinePreference()),
+                enumName(preference.getClassType())
         );
     }
 
@@ -260,8 +278,8 @@ public class ProgramReasonService {
                 && response.matchScore() != null;
     }
 
-    private String buildCacheKey(Long programId, Long preferenceId, ProgramReasonAiRequest request) {
-        return "ai:program-reason:" + preferenceId + ":" + programId + ":" + sha256(writeRequest(request));
+    private String buildCacheKey(Long programId, Long preferenceId, Long childId, ProgramReasonAiRequest request) {
+        return "ai:program-reason:" + childId + ":" + preferenceId + ":" + programId + ":" + sha256(writeRequest(request));
     }
 
     private String writeRequest(ProgramReasonAiRequest request) {
