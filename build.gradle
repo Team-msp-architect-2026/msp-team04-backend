@@ -93,14 +93,18 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
-    jvmArgs += ['-Djdk.attach.allowAttachSelf=true']
-
-    // CI 환경에서 외부 인프라 의존 테스트 제외
-    if (System.getenv('CI') == 'true') {
-        exclude '**/MomentBackendApplicationTests*'
-        exclude '**/publicdata/**'
-        exclude '**/RecommendationIntegrationTest*'
-        exclude '**/TestMomentBackendApplication*'
+    useJUnitPlatform {
+        excludeTags 'external-api'
     }
+    jvmArgs += ['-Djdk.attach.allowAttachSelf=true']
+}
+
+tasks.register('externalApiTest', Test) {
+    description = 'Runs tests that call external public data APIs.'
+    group = 'verification'
+
+    useJUnitPlatform {
+        includeTags 'external-api'
+    }
+    jvmArgs += ['-Djdk.attach.allowAttachSelf=true']
 }

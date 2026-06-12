@@ -2,6 +2,7 @@ package com.moment.momentbackend.publicdata.service;
 
 import com.moment.momentbackend.publicdata.client.BokjiroLocalClient;
 import com.moment.momentbackend.publicdata.dto.BokjiroLocalResponse;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("external-api")
 @SpringBootTest
 @ActiveProfiles("local")
 class BokjiroLocalSyncServiceTest {
