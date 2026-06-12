@@ -1,9 +1,15 @@
 package com.moment.momentbackend.program.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.moment.momentbackend.program.entity.Program;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
+@NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ProgramListResponseDto {
 
     private Long id;
