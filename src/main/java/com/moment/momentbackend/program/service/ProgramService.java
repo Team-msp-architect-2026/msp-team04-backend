@@ -50,55 +50,35 @@ public class ProgramService {
         );
     }
 
-    @Cacheable(value = "homePrograms", key = "#region + ':' + #category")
+    @Cacheable(value = "homeProgramsV2", key = "#region + ':' + #category")
     @Transactional(readOnly = true)
     public HomeProgramsResponseDto getHomePrograms(String region, String category) {
-        int page = 0;
-        int size = 500;
-        int targetCount = 300;
+        PageRequest defaultPageable = PageRequest.of(
+                0,
+                5,
+                Sort.by(Sort.Direction.ASC, "deadlineDate")
+        );
 
-        List<ProgramListResponseDto> futurePrograms = new ArrayList<>();
-        Page<ProgramListResponseDto> result;
+        PageRequest urgentPageable = PageRequest.of(
+                0,
+                5,
+                Sort.by(Sort.Direction.ASC, "deadlineDate")
+        );
 
-        do {
-            PageRequest pageable = PageRequest.of(
-                    page,
-                    size,
-                    Sort.by(Sort.Direction.ASC, "deadlineDate")
-            );
+        List<ProgramListResponseDto> freePrograms = programListQueryRepository
+                .findPrograms("RECRUITING", category, region, "FREE", defaultPageable)
+                .map(ProgramListResponseDto::new)
+                .getContent();
 
-            result = programListQueryRepository
-                    .findPrograms(null, category, region, pageable)
-                    .map(ProgramListResponseDto::new);
+        List<ProgramListResponseDto> urgentPrograms = programListQueryRepository
+                .findPrograms("RECRUITING", category, region, "URGENT", urgentPageable)
+                .map(ProgramListResponseDto::new)
+                .getContent();
 
-            List<ProgramListResponseDto> validPrograms = result.getContent().stream()
-                    .filter(this::hasValidFutureDeadline)
-                    .toList();
-
-            futurePrograms.addAll(validPrograms);
-            page++;
-
-        } while (result.hasNext() && futurePrograms.size() < targetCount);
-
-        List<ProgramListResponseDto> recruitingPrograms = futurePrograms.stream()
-                .filter(p -> Boolean.TRUE.equals(p.getIsRecruiting()))
-                .toList();
-
-        List<ProgramListResponseDto> freePrograms = recruitingPrograms.stream()
-                .filter(this::isFreeProgram)
-                .limit(5)
-                .toList();
-
-        List<ProgramListResponseDto> urgentPrograms = recruitingPrograms.stream()
-                .filter(this::isUrgentProgram)
-                .sorted(Comparator.comparing(ProgramListResponseDto::getDeadlineDate))
-                .limit(5)
-                .toList();
-
-        List<ProgramListResponseDto> onlinePrograms = recruitingPrograms.stream()
-                .filter(this::isOnlineProgram)
-                .limit(5)
-                .toList();
+        List<ProgramListResponseDto> onlinePrograms = programListQueryRepository
+                .findPrograms("RECRUITING", category, region, "ONLINE", defaultPageable)
+                .map(ProgramListResponseDto::new)
+                .getContent();
 
         return new HomeProgramsResponseDto(
                 freePrograms,
