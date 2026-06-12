@@ -4,6 +4,7 @@ import com.moment.momentbackend.benefit.entity.BenefitMaster;
 import com.moment.momentbackend.benefit.entity.BenefitMatch;
 import com.moment.momentbackend.benefit.repository.BenefitMasterRepository;
 import com.moment.momentbackend.benefit.repository.BenefitMatchRepository;
+import com.moment.momentbackend.benefit.repository.BenefitAssessmentProfileRepository;
 import com.moment.momentbackend.benefit.service.BenefitService;
 import com.moment.momentbackend.child.entity.ChildProfile;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
@@ -38,6 +39,9 @@ class BenefitServiceTest {
 
     @Mock
     private BenefitMatchRepository benefitMatchRepository;
+
+    @Mock
+    private BenefitAssessmentProfileRepository benefitAssessmentProfileRepository;
 
     @Mock
     private ChildProfileRepository childProfileRepository;
