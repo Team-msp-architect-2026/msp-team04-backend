@@ -2,6 +2,7 @@ package com.moment.momentbackend.benefit.controller;
 
 import com.moment.momentbackend.benefit.dto.BenefitMasterResponseDto;
 import com.moment.momentbackend.benefit.dto.BenefitMatchResponseDto;
+import com.moment.momentbackend.benefit.dto.BenefitSummaryResponseDto;
 import com.moment.momentbackend.benefit.service.BenefitService;
 import com.moment.momentbackend.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,13 +22,13 @@ public class BenefitController {
 
     private final BenefitService benefitService;
 
-    @Operation(summary = "전체 지원금 목록 조회")
+    @Operation(summary = "육아 지원금 후보 목록 조회")
     @GetMapping
     public ResponseEntity<ApiResponse<List<BenefitMasterResponseDto>>> getBenefits() {
         return ResponseEntity.ok(ApiResponse.ok(benefitService.getBenefits()));
     }
 
-    @Operation(summary = "자녀 기반 지원금 매칭 실행")
+    @Operation(summary = "자녀 및 지원금 진단 정보 기반 지원금 매칭 실행")
     @PostMapping("/matches/recalculate")
     public ResponseEntity<ApiResponse<List<BenefitMatchResponseDto>>> recalculate(
             @AuthenticationPrincipal Long userId,
@@ -42,5 +43,13 @@ public class BenefitController {
             @AuthenticationPrincipal Long userId,
             @RequestParam Long childId) {
         return ResponseEntity.ok(ApiResponse.ok(benefitService.getMatches(userId, childId)));
+    }
+
+    @Operation(summary = "지원금 매칭 요약 조회")
+    @GetMapping("/summary")
+    public ResponseEntity<ApiResponse<BenefitSummaryResponseDto>> getSummary(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam Long childId) {
+        return ResponseEntity.ok(ApiResponse.ok(benefitService.getSummary(userId, childId)));
     }
 }

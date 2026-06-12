@@ -14,6 +14,8 @@ public class BenefitMatchResponseDto {
     private String matchStatus;
     private String applyLink;
     private String supportDescription;
+    private String conditionDescription;
+    private String region;
 
     public BenefitMatchResponseDto(BenefitMatch match) {
         this.matchId = match.getId();
@@ -24,5 +26,7 @@ public class BenefitMatchResponseDto {
         this.matchStatus = match.getMatchStatus();
         this.applyLink = match.getBenefit().getApplyLink();
         this.supportDescription = match.getBenefit().getSupportDescription();
+        this.conditionDescription = match.getBenefit().getConditionDescription();
+        this.region = match.getBenefit().getRegion();
     }
 }
