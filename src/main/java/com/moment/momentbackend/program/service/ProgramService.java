@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -49,6 +50,7 @@ public class ProgramService {
         );
     }
 
+    @Cacheable(value = "homePrograms", key = "#region + ':' + #category")
     @Transactional(readOnly = true)
     public HomeProgramsResponseDto getHomePrograms(String region, String category) {
         int page = 0;

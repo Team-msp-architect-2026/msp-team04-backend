@@ -10,19 +10,18 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+
 
 @Service
 public class ScoringService {
 
-    private static final double W_DISTANCE   = 25.0;
-    private static final double W_BUDGET     = 20.0;
-    private static final double W_AGE        = 20.0;
-    private static final double W_CLASS_TYPE = 15.0;
-    private static final double W_RECRUITING = 10.0;
-    private static final double W_REVIEW     = 10.0;
-    private static final double W_KEYWORD    = 10.0;
+    private static final double W_DISTANCE   = 20.0; // 지역/거리 적합도 20%
+    private static final double W_BUDGET     = 20.0; // 예산/무료 여부 20%
+    private static final double W_AGE        = 15.0; // 연령 적합도 15%
+    private static final double W_KEYWORD    = 15.0; // 고민 키워드 적합도 15%
+    private static final double W_CLASS_TYPE = 10.0; // 수업 환경 적합도 10%
+    private static final double W_RECRUITING = 10.0; // 신청 가능 여부 10%
+    private static final double W_REVIEW     = 10.0; // 후기 만족도 10%
 
     public ScoreBreakdownDto calculate(Program program, RecommendationPreference preference,
                                        int childAge, double userLat, double userLon,
@@ -56,7 +55,6 @@ public class ScoringService {
                 .reasonCodes(reasonCodes)
                 .build();
     }
-
     private double calcDistanceScore(Program program, double userLat, double userLon) {
         if (program.getLatitude() == null || program.getLongitude() == null
                 || userLat == 0.0 || userLon == 0.0) {
@@ -70,10 +68,11 @@ public class ScoringService {
                 program.getLongitude().doubleValue()
         );
 
-        if (dist <= 1.0)  return W_DISTANCE;
-        if (dist <= 3.0)  return W_DISTANCE * 0.8;
-        if (dist <= 5.0)  return W_DISTANCE * 0.6;
+        if (dist <= 1.0) return W_DISTANCE;
+        if (dist <= 3.0) return W_DISTANCE * 0.8;
+        if (dist <= 5.0) return W_DISTANCE * 0.6;
         if (dist <= 10.0) return W_DISTANCE * 0.4;
+
         return W_DISTANCE * 0.1;
     }
 
@@ -104,25 +103,97 @@ public class ScoringService {
         return (minOk && maxOk) ? W_AGE : 0.0;
     }
 
-    private double calcKeywordScore(Program program, List<String> concerns) {
-        if (concerns == null || concerns.isEmpty()) {
+    private double calcKeywordScore(Program program, List<String> keywords) {
+        if (keywords == null || keywords.isEmpty()) {
             return 0.0;
         }
 
-        if (program.getTags() == null || program.getTags().isEmpty()) {
+        String searchText = buildProgramSearchText(program);
+
+        List<String> distinctKeywords = keywords.stream()
+                .filter(keyword -> keyword != null && !keyword.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+
+        if (distinctKeywords.isEmpty()) {
             return 0.0;
         }
 
-        Set<String> tagSet = program.getTags().stream()
-                .map(t -> t.getTag().toLowerCase())
-                .collect(Collectors.toSet());
-
-        long matchCount = concerns.stream()
-                .map(String::toLowerCase)
-                .filter(tagSet::contains)
+        long matchCount = distinctKeywords.stream()
+                .filter(keyword -> isKeywordMatched(searchText, keyword))
                 .count();
 
-        return ((double) matchCount / concerns.size()) * W_KEYWORD;
+        if (matchCount == 0) {
+            return 0.0;
+        }
+
+        double denominator = Math.min(distinctKeywords.size(), 3);
+
+        return Math.min(W_KEYWORD, ((double) matchCount / denominator) * W_KEYWORD);
+    }
+
+    private String buildProgramSearchText(Program program) {
+        StringBuilder sb = new StringBuilder();
+
+        appendText(sb, program.getTitle());
+        appendText(sb, program.getCategory());
+        appendText(sb, program.getClassType());
+
+        if (program.getTags() != null) {
+            program.getTags().forEach(tag -> appendText(sb, tag.getTag()));
+        }
+
+        return sb.toString().toLowerCase();
+    }
+
+    private void appendText(StringBuilder sb, String value) {
+        if (value != null && !value.isBlank()) {
+            sb.append(" ").append(value);
+        }
+    }
+
+    private boolean isKeywordMatched(String searchText, String keyword) {
+        String normalizedKeyword = keyword.toLowerCase().trim();
+
+        if (searchText.contains(normalizedKeyword)) {
+            return true;
+        }
+
+        return switch (normalizedKeyword) {
+            case "기초학습 부족" ->
+                    containsAny(searchText, "기초", "학습", "교육", "국어", "수학", "영어", "논술");
+
+            case "특정 과목 보완 필요" ->
+                    containsAny(searchText, "국어", "수학", "영어", "과학", "논술", "학습", "교육");
+
+            case "맡길 곳 필요" ->
+                    containsAny(searchText, "돌봄", "방과후", "센터", "보육", "보호");
+
+            case "친구관계" ->
+                    containsAny(searchText, "사회성", "또래", "협동", "관계", "집단", "놀이");
+
+            case "자신감 부족" ->
+                    containsAny(searchText, "발표", "체험", "미술", "음악", "체육", "놀이", "창의");
+
+            case "게임 과몰입" ->
+                    containsAny(searchText, "체육", "스포츠", "야외", "활동", "운동", "체험");
+
+            case "비용 부담" ->
+                    containsAny(searchText, "무료", "지원", "바우처", "할인", "공공", "복지");
+
+            default -> false;
+        };
+    }
+
+    private boolean containsAny(String searchText, String... words) {
+        for (String word : words) {
+            if (searchText.contains(word)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private double calcClassTypeScore(Program program, RecommendationPreference preference) {

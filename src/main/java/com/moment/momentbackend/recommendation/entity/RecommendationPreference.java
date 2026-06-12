@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -50,6 +51,22 @@ public class RecommendationPreference {
     @Column
     private ClassType classType;
 
+    @ElementCollection
+    @CollectionTable(
+            name = "recommendation_preference_concerns",
+            joinColumns = @JoinColumn(name = "preference_id")
+    )
+    @Column(name = "concern")
+    private List<String> concerns = List.of();
+
+    @ElementCollection
+    @CollectionTable(
+            name = "recommendation_preference_subject_details",
+            joinColumns = @JoinColumn(name = "preference_id")
+    )
+    @Column(name = "subject_detail")
+    private List<String> subjectDetails = List.of();
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -57,7 +74,10 @@ public class RecommendationPreference {
     public RecommendationPreference(Long userId, Long childId, String region,
                                     MonthlyBudget monthlyBudget, TransportType transportType,
                                     MoveTime moveTime, OnlinePreference onlinePreference,
-                                    ClassType classType, LocalDateTime createdAt) {
+                                    ClassType classType,
+                                    List<String> concerns,
+                                    List<String> subjectDetails,
+                                    LocalDateTime createdAt) {
         this.userId = userId;
         this.childId = childId;
         this.region = region;
@@ -66,6 +86,8 @@ public class RecommendationPreference {
         this.moveTime = moveTime;
         this.onlinePreference = onlinePreference;
         this.classType = classType;
+        this.concerns = concerns == null ? List.of() : concerns;
+        this.subjectDetails = subjectDetails == null ? List.of() : subjectDetails;
         this.createdAt = createdAt;
     }
 }

@@ -51,9 +51,11 @@ public class ProgramQueryRepository {
             }
         }
 
-        if (preference.getClassType() != null) {
-            builder.and(program.classType.eq(preference.getClassType().name()));
-        }
+        // MVP에서는 classType을 DB 조회 조건으로 강하게 걸지 않고,
+// ScoringService에서 점수로 반영한다.
+// if (preference.getClassType() != null) {
+//     builder.and(program.classType.eq(preference.getClassType().name()));
+// }
 
         return queryFactory
                 .selectFrom(program)

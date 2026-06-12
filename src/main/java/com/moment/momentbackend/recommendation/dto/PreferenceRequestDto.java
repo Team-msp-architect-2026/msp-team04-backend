@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Getter
 @NoArgsConstructor
 public class PreferenceRequestDto {
@@ -28,4 +30,8 @@ public class PreferenceRequestDto {
 
     @NotNull(message = "classType은 필수입니다.")
     private ClassType classType;
+
+    private List<String> concerns = List.of();
+
+    private List<String> subjectDetails = List.of();
 }
