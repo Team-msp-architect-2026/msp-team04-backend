@@ -55,18 +55,17 @@ public class ProgramReasonService {
     private final BusinessMetricsService businessMetricsService;
 
     @Transactional(readOnly = true)
-    public ProgramReasonResponse generate(Long userId, Long programId, Long preferenceId) {
+    public ProgramReasonResponse generate(Long userId, Long programId, Long preferenceId, Long childId) {
         return businessMetricsService.recordRecommendation(
                 "program_reason",
-                () -> generateInternal(userId, programId, preferenceId)
+                () -> generateInternal(userId, programId, preferenceId, childId)
         );
     }
 
-    private ProgramReasonResponse generateInternal(Long userId, Long programId, Long preferenceId) {
+    private ProgramReasonResponse generateInternal(Long userId, Long programId, Long preferenceId, Long childId) {
         validateUserId(userId);
 
-        RecommendationPreference preference = preferenceRepository.findByIdAndUserId(preferenceId, userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
+        RecommendationPreference preference = resolvePreference(userId, preferenceId, childId);
 
         ChildProfile child = childProfileRepository.findByIdAndUserId(preference.getChildId(), userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CHILD_ACCESS_DENIED));
@@ -122,6 +121,29 @@ public class ProgramReasonService {
         }
 
         return response;
+    }
+
+    private RecommendationPreference resolvePreference(Long userId, Long preferenceId, Long childId) {
+        if (preferenceId != null) {
+            RecommendationPreference preference = preferenceRepository.findByIdAndUserId(preferenceId, userId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
+
+            if (childId != null && !childId.equals(preference.getChildId())) {
+                throw new CustomException(ErrorCode.CHILD_ACCESS_DENIED);
+            }
+
+            return preference;
+        }
+
+        if (childId == null) {
+            throw new CustomException(ErrorCode.PREFERENCE_NOT_FOUND);
+        }
+
+        childProfileRepository.findByIdAndUserId(childId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHILD_ACCESS_DENIED));
+
+        return preferenceRepository.findTopByUserIdAndChildIdOrderByCreatedAtDesc(userId, childId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND));
     }
 
     private ProgramReasonAiRequest buildAiRequest(
