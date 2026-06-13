@@ -153,11 +153,16 @@ public class BenefitService {
     @Transactional
     public List<BenefitMatchResponseDto> recalculate(Long userId, Long childId) {
         ChildProfile child = getOwnedChild(userId, childId);
-        int childAge = calculateAge(child);
         Optional<BenefitAssessmentProfile> profile = benefitAssessmentProfileRepository.findByUserId(userId);
 
         benefitMatchRepository.deleteAllByChildId(childId);
         benefitMatchRepository.flush();
+
+        if (profile.isEmpty()) {
+            return List.of();
+        }
+
+        int childAge = calculateAge(child);
 
         List<BenefitMatch> matches = findParentingBenefitCandidates().stream()
                 .map(benefit -> toMatch(userId, childId, benefit, childAge, profile))
@@ -189,6 +194,25 @@ public class BenefitService {
         ChildProfile child = getOwnedChild(userId, childId);
         boolean profileCompleted = benefitAssessmentProfileRepository.existsByUserId(userId);
 
+        String officialCheckMessage = "지원금 자격은 입력 정보와 공공데이터 문구를 기준으로 선별한 결과이며, 최종 신청 가능 여부와 정확한 금액은 각 공식 신청 페이지에서 확인해야 합니다.";
+
+        if (!profileCompleted) {
+            String summaryMessage = buildSummaryMessage(child.getChildName(), 0, 0, false);
+
+            return new BenefitSummaryResponseDto(
+                    childId,
+                    child.getChildName(),
+                    false,
+                    0,
+                    0,
+                    0,
+                    0,
+                    summaryMessage,
+                    officialCheckMessage,
+                    List.of()
+            );
+        }
+
         List<BenefitMatch> matches = benefitMatchRepository.findAllByUserIdAndChildIdWithBenefit(userId, childId).stream()
                 .sorted(matchComparator())
                 .limit(MAX_MATCH_SAVE_COUNT)
@@ -214,7 +238,6 @@ public class BenefitService {
                 .collect(Collectors.toList());
 
         String summaryMessage = buildSummaryMessage(child.getChildName(), applicableCount, conditionCheckCount, profileCompleted);
-        String officialCheckMessage = "지원금 자격은 입력 정보와 공공데이터 문구를 기준으로 선별한 결과이며, 최종 신청 가능 여부와 정확한 금액은 각 공식 신청 페이지에서 확인해야 합니다.";
 
         return new BenefitSummaryResponseDto(
                 childId,
