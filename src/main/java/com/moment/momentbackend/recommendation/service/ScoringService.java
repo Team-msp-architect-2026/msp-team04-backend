@@ -77,12 +77,12 @@ public class ScoringService {
     }
 
     private double calcBudgetScore(Program program, RecommendationPreference preference) {
-        if (preference.getMonthlyBudget() == null) {
-            return W_BUDGET * 0.5;
-        }
-
         int price = program.getPrice() != null ? program.getPrice() : 0;
         boolean isFree = Boolean.TRUE.equals(program.getIsFree()) || price == 0;
+
+        if (preference == null || preference.getMonthlyBudget() == null) {
+            return isFree ? W_BUDGET : W_BUDGET * 0.5;
+        }
 
         return switch (preference.getMonthlyBudget()) {
             case FREE -> isFree ? W_BUDGET : W_BUDGET * 0.2;
@@ -139,6 +139,12 @@ public class ScoringService {
         appendText(sb, program.getTitle());
         appendText(sb, program.getCategory());
         appendText(sb, program.getClassType());
+        appendText(sb, program.getDescription());
+        appendText(sb, program.getRegion());
+
+        if (program.getInstitution() != null) {
+            appendText(sb, program.getInstitution().getInstitutionName());
+        }
 
         if (program.getTags() != null) {
             program.getTags().forEach(tag -> appendText(sb, tag.getTag()));
@@ -170,8 +176,11 @@ public class ScoringService {
             case "맡길 곳 필요" ->
                     containsAny(searchText, "돌봄", "방과후", "센터", "보육", "보호");
 
-            case "친구관계" ->
-                    containsAny(searchText, "사회성", "또래", "협동", "관계", "집단", "놀이");
+            case "친구관계", "친구 관계" ->
+                    containsAny(searchText, "사회성", "또래", "협동", "관계", "집단", "놀이", "가족", "체험", "활동");
+
+            case "성격" ->
+                    containsAny(searchText, "체험", "놀이", "사회성", "협동", "관계", "가족", "야외", "활동", "생태", "농사", "텃밭");
 
             case "자신감 부족" ->
                     containsAny(searchText, "발표", "체험", "미술", "음악", "체육", "놀이", "창의");
@@ -197,7 +206,7 @@ public class ScoringService {
     }
 
     private double calcClassTypeScore(Program program, RecommendationPreference preference) {
-        if (preference.getClassType() == null || program.getClassType() == null) {
+        if (preference == null || preference.getClassType() == null || program.getClassType() == null) {
             return W_CLASS_TYPE * 0.5;
         }
 

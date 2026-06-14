@@ -20,8 +20,9 @@ public class ProgramReasonController {
     public ApiResponse<ProgramReasonResponse> getProgramReason(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long programId,
-            @RequestParam Long preferenceId
+            @RequestParam(required = false) Long preferenceId,
+            @RequestParam(required = false) Long childId
     ) {
-        return ApiResponse.ok(programReasonService.generate(userId, programId, preferenceId));
+        return ApiResponse.ok(programReasonService.generate(userId, programId, preferenceId, childId));
     }
 }

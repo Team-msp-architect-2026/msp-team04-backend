@@ -1,9 +1,11 @@
 package com.moment.momentbackend.benefit;
 
 import com.moment.momentbackend.benefit.entity.BenefitMaster;
+import com.moment.momentbackend.benefit.entity.BenefitAssessmentProfile;
 import com.moment.momentbackend.benefit.entity.BenefitMatch;
 import com.moment.momentbackend.benefit.repository.BenefitMasterRepository;
 import com.moment.momentbackend.benefit.repository.BenefitMatchRepository;
+import com.moment.momentbackend.benefit.repository.BenefitAssessmentProfileRepository;
 import com.moment.momentbackend.benefit.service.BenefitService;
 import com.moment.momentbackend.child.entity.ChildProfile;
 import com.moment.momentbackend.child.repository.ChildProfileRepository;
@@ -38,6 +40,9 @@ class BenefitServiceTest {
 
     @Mock
     private BenefitMatchRepository benefitMatchRepository;
+
+    @Mock
+    private BenefitAssessmentProfileRepository benefitAssessmentProfileRepository;
 
     @Mock
     private ChildProfileRepository childProfileRepository;
@@ -121,8 +126,8 @@ class BenefitServiceTest {
     }
 
     @Test
-    @DisplayName("매칭 실행 시 saveAll 호출 확인")
-    void recalculate_saveAllCalled() {
+    @DisplayName("지원금 진단 정보가 있으면 매칭 실행 시 saveAll 호출")
+    void recalculate_withBenefitProfile_saveAllCalled() {
         Long userId = 1L;
         Long childId = 1L;
 
@@ -131,18 +136,49 @@ class BenefitServiceTest {
                 .birthDate(LocalDate.now().minusYears(7))
                 .createdAt(LocalDateTime.now()).build();
 
+        BenefitAssessmentProfile profile = mock(BenefitAssessmentProfile.class);
         BenefitMaster benefit = mockBenefit(1L, 3, 10, true);
 
         when(childProfileRepository.findByIdAndUserId(childId, userId))
                 .thenReturn(Optional.of(child));
+        when(benefitAssessmentProfileRepository.findByUserId(userId))
+                .thenReturn(Optional.of(profile));
         when(benefitMasterRepository.findAllByIsActiveTrue())
                 .thenReturn(List.of(benefit));
         doNothing().when(benefitMatchRepository).deleteAllByChildId(childId);
+        doNothing().when(benefitMatchRepository).flush();
         when(benefitMatchRepository.saveAll(any())).thenReturn(List.of());
 
         benefitService.recalculate(userId, childId);
 
         verify(benefitMatchRepository, times(1)).deleteAllByChildId(childId);
+        verify(benefitMatchRepository, times(1)).flush();
         verify(benefitMatchRepository, times(1)).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("지원금 진단 정보가 없으면 기존 매칭 삭제 후 저장하지 않음")
+    void recalculate_withoutBenefitProfile_returnsEmptyAndDoesNotSave() {
+        Long userId = 1L;
+        Long childId = 1L;
+
+        ChildProfile child = ChildProfile.builder()
+                .userId(userId).childName("홍길동")
+                .birthDate(LocalDate.now().minusYears(7))
+                .createdAt(LocalDateTime.now()).build();
+
+        when(childProfileRepository.findByIdAndUserId(childId, userId))
+                .thenReturn(Optional.of(child));
+        when(benefitAssessmentProfileRepository.findByUserId(userId))
+                .thenReturn(Optional.empty());
+        doNothing().when(benefitMatchRepository).deleteAllByChildId(childId);
+        doNothing().when(benefitMatchRepository).flush();
+
+        assertThat(benefitService.recalculate(userId, childId)).isEmpty();
+
+        verify(benefitMatchRepository, times(1)).deleteAllByChildId(childId);
+        verify(benefitMatchRepository, times(1)).flush();
+        verify(benefitMatchRepository, never()).saveAll(any());
+        verify(benefitMasterRepository, never()).findAllByIsActiveTrue();
     }
 }
