@@ -74,4 +74,16 @@ public class ProgramController {
             @RequestParam(required = false) String region) {
         return ResponseEntity.ok(ApiResponse.ok(programService.getMapPins(region)));
     }
+
+    @Operation(summary = "내 주변 찾기",
+            description = "현재 위치(lat, lng) 기준 반경(radiusKm) 내 프로그램 핀 조회, 거리순 정렬")
+    @GetMapping("/map/nearby")
+    public ResponseEntity<ApiResponse<List<MapPinResponseDto>>> getNearbyMapPins(
+            @Parameter(description = "위도") @RequestParam double lat,
+            @Parameter(description = "경도") @RequestParam double lng,
+            @Parameter(description = "반경(km), 기본 3km") @RequestParam(defaultValue = "3") double radiusKm,
+            @Parameter(description = "최대 개수") @RequestParam(required = false) Integer limit) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                programService.getNearbyMapPins(lat, lng, radiusKm, limit)));
+    }
 }

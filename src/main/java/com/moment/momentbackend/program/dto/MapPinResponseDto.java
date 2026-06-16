@@ -13,8 +13,13 @@ public class MapPinResponseDto {
     private String category;
     private String status;      // RECRUITING / CLOSED
     private String pinColor;    // BLUE / GREEN / ORANGE / GRAY
+    private Double distanceKm;  // 내 주변 찾기일 때만 값 존재, 그 외 null
 
     public MapPinResponseDto(Program program) {
+        this(program, null);
+    }
+
+    public MapPinResponseDto(Program program, Double distanceKm) {
         this.id = program.getId();
         this.name = program.getTitle();
         this.latitude = program.getLatitude() != null
@@ -24,6 +29,7 @@ public class MapPinResponseDto {
         this.category = program.getCategory();
         this.status = program.getIsRecruiting() ? "RECRUITING" : "CLOSED";
         this.pinColor = resolvePinColor(program);
+        this.distanceKm = distanceKm;
     }
 
     private String resolvePinColor(Program program) {

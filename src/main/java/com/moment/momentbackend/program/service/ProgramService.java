@@ -21,8 +21,9 @@ import org.springframework.cache.annotation.Cacheable;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Comparator;
+import com.moment.momentbackend.program.entity.Program;
+
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -169,5 +170,35 @@ public class ProgramService {
                 .stream()
                 .map(MapPinResponseDto::new)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 내 주변 찾기: lat/lng 기준 반경(km) 내 프로그램 핀 조회
+     */
+    @Transactional(readOnly = true)
+    public List<MapPinResponseDto> getNearbyMapPins(double lat, double lng, double radiusKm, Integer limit) {
+        return mapPinQueryRepository.findNearbyPins(lat, lng, radiusKm, limit)
+                .stream()
+                .map(program -> new MapPinResponseDto(program, calculateDistanceKm(lat, lng, program)))
+                .collect(Collectors.toList());
+    }
+
+    private Double calculateDistanceKm(double lat, double lng, Program program) {
+        if (program.getLatitude() == null || program.getLongitude() == null) return null;
+
+        double pLat = program.getLatitude().doubleValue();
+        double pLng = program.getLongitude().doubleValue();
+
+        double earthRadiusKm = 6371.0;
+        double dLat = Math.toRadians(pLat - lat);
+        double dLng = Math.toRadians(pLng - lng);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat)) * Math.cos(Math.toRadians(pLat))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return Math.round(earthRadiusKm * c * 100) / 100.0;
     }
 }
